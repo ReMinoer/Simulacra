@@ -3,6 +3,7 @@
     public interface IDataModel<T>
     {
         void From(T obj);
-        void To(out T obj);
+        void To(T obj);
+        T Create();
     }
 }
