@@ -1,9 +1,7 @@
 ﻿namespace Diese.Modelization
 {
-    public interface IDataModel<T>
+    public interface IDataModel<in T>
     {
         void From(T obj);
-        void To(T obj);
-        T Create();
     }
 }
