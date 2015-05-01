@@ -34,6 +34,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfiguratorList.cs" />
+    <Compile Include="CreatorList.cs" />
+    <Compile Include="DataModelList.cs" />
     <Compile Include="IConfigurator.cs" />
     <Compile Include="ICreator.cs" />
     <Compile Include="IDataModel.cs" />
