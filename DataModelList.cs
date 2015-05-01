@@ -8,10 +8,10 @@ namespace Diese.Modelization
         public void From(List<T> obj)
         {
             Clear();
-            foreach (T passenger in obj)
+            foreach (T element in obj)
             {
                 var dataModel = new TData();
-                dataModel.From(passenger);
+                dataModel.From(element);
                 Add(dataModel);
             }
         }
