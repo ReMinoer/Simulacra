@@ -5,6 +5,76 @@ using System.Xml.Serialization;
 
 namespace Diese.Modelization
 {
+    public class DataModelDictionary<TKey, TValue> : Dictionary<TKey, TValue>,
+        IDataModel<Dictionary<TKey, TValue>>, IXmlSerializable
+        where TValue : new()
+    {
+        public void From(Dictionary<TKey, TValue> obj)
+        {
+            Clear();
+            foreach (KeyValuePair<TKey, TValue> keyValuePair in obj)
+                Add(keyValuePair.Key, keyValuePair.Value);
+        }
+
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(XmlReader reader)
+        {
+            var keySerializer = new XmlSerializer(typeof(TKey));
+            var valueSerializer = new XmlSerializer(typeof(TValue));
+
+            bool wasEmpty = reader.IsEmptyElement;
+            reader.Read();
+
+            if (wasEmpty)
+                return;
+
+            while (reader.NodeType != XmlNodeType.EndElement)
+            {
+                reader.ReadStartElement("Item");
+
+                reader.ReadStartElement("Key");
+                var key = (TKey)keySerializer.Deserialize(reader);
+                reader.ReadEndElement();
+
+                reader.ReadStartElement("Value");
+                var value = (TValue)valueSerializer.Deserialize(reader);
+                reader.ReadEndElement();
+
+                Add(key, value);
+
+                reader.ReadEndElement();
+                reader.MoveToContent();
+            }
+            reader.ReadEndElement();
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            var keySerializer = new XmlSerializer(typeof(TKey));
+            var valueSerializer = new XmlSerializer(typeof(TValue));
+
+            foreach (TKey key in Keys)
+            {
+                writer.WriteStartElement("Item");
+
+                writer.WriteStartElement("Key");
+                keySerializer.Serialize(writer, key);
+                writer.WriteEndElement();
+
+                writer.WriteStartElement("Value");
+                TValue value = this[key];
+                valueSerializer.Serialize(writer, value);
+                writer.WriteEndElement();
+
+                writer.WriteEndElement();
+            }
+        }
+    }
+
     public class DataModelDictionary<TKey, TValue, TValueData> : Dictionary<TKey, TValueData>,
         IDataModel<Dictionary<TKey, TValue>>, IXmlSerializable
         where TValueData : IDataModel<TValue>, new()
