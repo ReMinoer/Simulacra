@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Diese.Modelization
 {
@@ -7,10 +8,7 @@ namespace Diese.Modelization
     {
         public List<T> Create()
         {
-            var list = new List<T>();
-            foreach (T data in this)
-                list.Add(data);
-            return list;
+            return this.ToList();
         }
     }
 
@@ -19,10 +17,7 @@ namespace Diese.Modelization
     {
         public List<T> Create()
         {
-            var list = new List<T>();
-            foreach (TData modelData in this)
-                list.Add(modelData.Create());
-            return list;
+            return this.Select(modelData => modelData.Create()).ToList();
         }
     }
 }

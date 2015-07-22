@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Diese.Modelization
 {
@@ -7,10 +8,7 @@ namespace Diese.Modelization
     {
         public Dictionary<TKey, TValue> Create()
         {
-            var list = new Dictionary<TKey, TValue>();
-            foreach (KeyValuePair<TKey, TValue> keyValuePair in this)
-                list.Add(keyValuePair.Key, keyValuePair.Value);
-            return list;
+            return this.ToDictionary(pair => pair.Key, pair => pair.Value);
         }
     }
 
@@ -20,10 +18,7 @@ namespace Diese.Modelization
     {
         public Dictionary<TKey, TValue> Create()
         {
-            var list = new Dictionary<TKey, TValue>();
-            foreach (KeyValuePair<TKey, TValueData> keyValuePair in this)
-                list.Add(keyValuePair.Key, keyValuePair.Value.Create());
-            return list;
+            return this.ToDictionary(pair => pair.Key, pair => pair.Value.Create());
         }
     }
 
@@ -34,10 +29,7 @@ namespace Diese.Modelization
     {
         public Dictionary<TKey, TValue> Create()
         {
-            var list = new Dictionary<TKey, TValue>();
-            foreach (KeyValuePair<TKeyData, TValueData> keyValuePair in this)
-                list.Add(keyValuePair.Key.Create(), keyValuePair.Value.Create());
-            return list;
+            return this.ToDictionary(pair => pair.Key.Create(), pair => pair.Value.Create());
         }
     }
 }
