@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace Diese.Modelization
+namespace Diese.Modelization.Collections
 {
-    public class DataModelList<T> : List<T>, IDataModel<List<T>>
+    public class DataModelList<T> : List<T>, IDataModel<IList<T>>
         where T : new()
     {
-        public void From(List<T> obj)
+        public void From(IList<T> obj)
         {
             Clear();
             foreach (T element in obj)
@@ -13,10 +13,10 @@ namespace Diese.Modelization
         }
     }
 
-    public class DataModelList<T, TData> : List<TData>, IDataModel<List<T>>
+    public class DataModelList<T, TData> : List<TData>, IDataModel<IList<T>>
         where TData : IDataModel<T>, new()
     {
-        public void From(List<T> obj)
+        public void From(IList<T> obj)
         {
             Clear();
             foreach (T element in obj)

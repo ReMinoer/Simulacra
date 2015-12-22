@@ -1,6 +1,6 @@
 ﻿namespace Diese.Modelization
 {
-    public interface ICreator<T> : IDataModel<T>
+    public interface ICreator<out T>
     {
         T Create();
     }

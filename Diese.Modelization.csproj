@@ -35,14 +35,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfiguratorDictionary.cs" />
-    <Compile Include="ConfiguratorList.cs" />
-    <Compile Include="CreatorDictionary.cs" />
-    <Compile Include="CreatorList.cs" />
-    <Compile Include="DataModelDictionary.cs" />
-    <Compile Include="DataModelList.cs" />
+    <Compile Include="Collections\ConfigurationDataDictionary.cs" />
+    <Compile Include="Collections\ConfigurationDataList.cs" />
+    <Compile Include="Collections\CreationDataDictionary.cs" />
+    <Compile Include="Collections\CreationDataList.cs" />
+    <Compile Include="Collections\DataModelDictionary.cs" />
+    <Compile Include="Collections\DataModelList.cs" />
     <Compile Include="IConfigurator.cs" />
+    <Compile Include="IConfigurationData.cs" />
     <Compile Include="ICreator.cs" />
+    <Compile Include="ICreationData.cs" />
     <Compile Include="IDataModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

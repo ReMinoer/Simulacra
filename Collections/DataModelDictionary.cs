@@ -3,7 +3,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-namespace Diese.Modelization
+namespace Diese.Modelization.Collections
 {
     public class DataModelDictionary<TKey, TValue> : Dictionary<TKey, TValue>,
         IDataModel<Dictionary<TKey, TValue>>, IXmlSerializable

@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Diese.Modelization
+namespace Diese.Modelization.Collections
 {
-    public class ConfiguratorDictionary<TKey, TValue, TValueData> : DataModelDictionary<TKey, TValue, TValueData>,
-        IConfigurator<Dictionary<TKey, TValue>>
-        where TValueData : IConfigurator<TValue>, new()
+    public sealed class ConfigurationDataDictionary<TKey, TValue, TValueData> : DataModelDictionary<TKey, TValue, TValueData>,
+        IConfigurationData<Dictionary<TKey, TValue>>
+        where TValueData : IConfigurationData<TValue>, new()
     {
         public void Configure(Dictionary<TKey, TValue> obj)
         {
@@ -14,10 +14,10 @@ namespace Diese.Modelization
         }
     }
 
-    public class ConfiguratorDictionary<TKey, TValue, TKeyData, TValueData> :
-        DataModelDictionary<TKey, TValue, TKeyData, TValueData>, IConfigurator<Dictionary<TKey, TValue>>
-        where TKeyData : IConfigurator<TKey>, new()
-        where TValueData : IConfigurator<TValue>, new()
+    public sealed class ConfigurationDataDictionary<TKey, TValue, TKeyData, TValueData> :
+        DataModelDictionary<TKey, TValue, TKeyData, TValueData>, IConfigurationData<Dictionary<TKey, TValue>>
+        where TKeyData : IConfigurationData<TKey>, new()
+        where TValueData : IConfigurationData<TValue>, new()
     {
         public void Configure(Dictionary<TKey, TValue> obj)
         {
