@@ -4,31 +4,48 @@ using System.Linq;
 
 namespace Diese.Modelization.Collections
 {
-    public sealed class CreationDataList<T> : DataModelList<T>, ICreationData<IList<T>>
+    public sealed class CreationDataList<T> : DataModelList<T>, ICreationData<ICollection<T>>, IConfigurationData<ICollection<T>>
         where T : new()
     {
-        public IList<T> Create()
+        public ICollection<T> Create()
         {
             return this.ToList();
         }
+
+        public void Configure(ICollection<T> obj)
+        {
+            obj.Clear();
+
+            foreach (T item in this)
+                obj.Add(item);
+        }
     }
 
-    public sealed class CreationDataList<T, TData> : DataModelList<T, TData>, ICreationData<IList<T>>
+    public sealed class CreationDataList<T, TData> : DataModelList<T, TData>, ICreationData<ICollection<T>>, IConfigurationData<ICollection<T>>
         where TData : ICreationData<T>, new()
     {
         public Action<TData> DataConfiguration { get; set; }
 
-        public IList<T> Create()
+        public ICollection<T> Create()
         {
-            return this.Select(modelData =>
-            {
-                if (DataConfiguration != null)
-                    DataConfiguration(modelData);
+            return this.Select(CreateItem).ToList();
+        }
 
-                T obj = modelData.Create();
-                return obj;
-            })
-            .ToList();
+        public void Configure(ICollection<T> obj)
+        {
+            obj.Clear();
+
+            foreach (TData data in this)
+                obj.Add(CreateItem(data));
+        }
+
+        private T CreateItem(TData data)
+        {
+            if (DataConfiguration != null)
+                DataConfiguration(data);
+
+            T item = data.Create();
+            return item;
         }
     }
 }

@@ -4,38 +4,56 @@ using System.Linq;
 
 namespace Diese.Modelization.Collections
 {
-    public sealed class CreationDataDictionary<TKey, TValue> : DataModelDictionary<TKey, TValue>, ICreationData<Dictionary<TKey, TValue>>
+    public sealed class CreationDataDictionary<TKey, TValue> : DataModelDictionary<TKey, TValue>, ICreationData<Dictionary<TKey, TValue>>, IConfigurationData<Dictionary<TKey, TValue>>
         where TValue : new()
     {
         public Dictionary<TKey, TValue> Create()
         {
             return this.ToDictionary(pair => pair.Key, pair => pair.Value);
         }
+
+        public void Configure(Dictionary<TKey, TValue> obj)
+        {
+            obj.Clear();
+
+            foreach (KeyValuePair<TKey, TValue> pair in this)
+                obj.Add(pair.Key, pair.Value);
+        }
     }
 
     public sealed class CreationDataDictionary<TKey, TValue, TValueData> : DataModelDictionary<TKey, TValue, TValueData>,
-        ICreationData<Dictionary<TKey, TValue>>
+        ICreationData<Dictionary<TKey, TValue>>, IConfigurationData<Dictionary<TKey, TValue>>
         where TValueData : ICreationData<TValue>, new()
     {
         public Action<TValueData> ValueDataConfiguration { get; set; }
 
         public Dictionary<TKey, TValue> Create()
         {
-            return this.ToDictionary(pair => pair.Key, pair =>
-            {
-                TValueData modelData = pair.Value;
+            return this.ToDictionary(pair => pair.Key, CreateValue);
+        }
 
-                if (ValueDataConfiguration != null)
-                    ValueDataConfiguration(modelData);
+        public void Configure(Dictionary<TKey, TValue> obj)
+        {
+            obj.Clear();
 
-                TValue obj = modelData.Create();
-                return obj;
-            });
+            foreach (KeyValuePair<TKey, TValueData> pair in this)
+                obj.Add(pair.Key, CreateValue(pair));
+        }
+
+        private TValue CreateValue(KeyValuePair<TKey, TValueData> pair)
+        {
+            TValueData data = pair.Value;
+
+            if (ValueDataConfiguration != null)
+                ValueDataConfiguration(data);
+
+            TValue item = data.Create();
+            return item;
         }
     }
 
     public sealed class CreationDataDictionary<TKey, TValue, TKeyData, TValueData> :
-        DataModelDictionary<TKey, TValue, TKeyData, TValueData>, ICreationData<Dictionary<TKey, TValue>>
+        DataModelDictionary<TKey, TValue, TKeyData, TValueData>, ICreationData<Dictionary<TKey, TValue>>, IConfigurationData<Dictionary<TKey, TValue>>
         where TKeyData : ICreationData<TKey>, new()
         where TValueData : ICreationData<TValue>, new()
     {
@@ -44,25 +62,37 @@ namespace Diese.Modelization.Collections
 
         public Dictionary<TKey, TValue> Create()
         {
-            return this.ToDictionary(pair =>
-            {
-                TKeyData modelData = pair.Key;
+            return this.ToDictionary(CreateKey, CreateValue);
+        }
 
-                if (KeyDataConfiguration != null)
-                    KeyDataConfiguration(modelData);
+        public void Configure(Dictionary<TKey, TValue> obj)
+        {
+            obj.Clear();
 
-                TKey obj = modelData.Create();
-                return obj;
-            }, pair =>
-            {
-                TValueData modelData = pair.Value;
+            foreach (KeyValuePair<TKeyData, TValueData> pair in this)
+                obj.Add(CreateKey(pair), CreateValue(pair));
+        }
 
-                if (ValueDataConfiguration != null)
-                    ValueDataConfiguration(modelData);
+        private TKey CreateKey(KeyValuePair<TKeyData, TValueData> pair)
+        {
+            TKeyData data = pair.Key;
 
-                TValue obj = modelData.Create();
-                return obj;
-            });
+            if (KeyDataConfiguration != null)
+                KeyDataConfiguration(data);
+
+            TKey item = data.Create();
+            return item;
+        }
+
+        private TValue CreateValue(KeyValuePair<TKeyData, TValueData> pair)
+        {
+            TValueData data = pair.Value;
+
+            if (ValueDataConfiguration != null)
+                ValueDataConfiguration(data);
+
+            TValue item = data.Create();
+            return item;
         }
     }
 }
