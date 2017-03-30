@@ -44,8 +44,7 @@ namespace Diese.Modelization.Collections
         {
             TValueData data = pair.Value;
 
-            if (ValueDataConfiguration != null)
-                ValueDataConfiguration(data);
+            ValueDataConfiguration?.Invoke(data);
 
             TValue item = data.Create();
             return item;
@@ -77,8 +76,7 @@ namespace Diese.Modelization.Collections
         {
             TKeyData data = pair.Key;
 
-            if (KeyDataConfiguration != null)
-                KeyDataConfiguration(data);
+            KeyDataConfiguration?.Invoke(data);
 
             TKey item = data.Create();
             return item;
@@ -88,8 +86,7 @@ namespace Diese.Modelization.Collections
         {
             TValueData data = pair.Value;
 
-            if (ValueDataConfiguration != null)
-                ValueDataConfiguration(data);
+            ValueDataConfiguration?.Invoke(data);
 
             TValue item = data.Create();
             return item;
