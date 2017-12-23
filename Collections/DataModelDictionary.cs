@@ -5,9 +5,7 @@ using System.Xml.Serialization;
 
 namespace Diese.Modelization.Collections
 {
-    public class DataModelDictionary<TKey, TValue> : Dictionary<TKey, TValue>,
-        IDataModel<Dictionary<TKey, TValue>>, IXmlSerializable
-        where TValue : new()
+    public class DataModelDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IDataModel<Dictionary<TKey, TValue>>, IXmlSerializable
     {
         public void From(Dictionary<TKey, TValue> obj)
         {

@@ -41,10 +41,9 @@
     <Compile Include="Collections\CreationDataList.cs" />
     <Compile Include="Collections\DataModelDictionary.cs" />
     <Compile Include="Collections\DataModelList.cs" />
+    <Compile Include="IDataBindable.cs" />
     <Compile Include="IConfigurator.cs" />
-    <Compile Include="IConfigurationData.cs" />
     <Compile Include="ICreator.cs" />
-    <Compile Include="ICreationData.cs" />
     <Compile Include="IDataModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

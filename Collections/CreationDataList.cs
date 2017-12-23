@@ -4,8 +4,7 @@ using System.Linq;
 
 namespace Diese.Modelization.Collections
 {
-    public sealed class CreationDataList<T> : DataModelList<T>, ICreationData<ICollection<T>>, IConfigurationData<ICollection<T>>
-        where T : new()
+    public sealed class CreationDataList<T> : DataModelList<T>, ICreator<ICollection<T>>, IConfigurator<ICollection<T>>
     {
         public ICollection<T> Create()
         {
@@ -21,8 +20,8 @@ namespace Diese.Modelization.Collections
         }
     }
 
-    public sealed class CreationDataList<T, TData> : DataModelList<T, TData>, ICreationData<ICollection<T>>, IConfigurationData<ICollection<T>>
-        where TData : ICreationData<T>, new()
+    public sealed class CreationDataList<T, TData> : DataModelList<T, TData>, ICreator<ICollection<T>>, IConfigurator<ICollection<T>>
+        where TData : IDataModel<T>, ICreator<T>, new()
     {
         public Action<TData> DataConfiguration { get; set; }
 

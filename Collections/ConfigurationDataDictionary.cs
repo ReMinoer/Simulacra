@@ -3,9 +3,8 @@ using System.Linq;
 
 namespace Diese.Modelization.Collections
 {
-    public sealed class ConfigurationDataDictionary<TKey, TValue, TValueData> : DataModelDictionary<TKey, TValue, TValueData>,
-        IConfigurationData<Dictionary<TKey, TValue>>
-        where TValueData : IConfigurationData<TValue>, new()
+    public sealed class ConfigurationDataDictionary<TKey, TValue, TValueData> : DataModelDictionary<TKey, TValue, TValueData>, IConfigurator<Dictionary<TKey, TValue>>
+        where TValueData : IDataModel<TValue>, IConfigurator<TValue>, new()
     {
         public void Configure(Dictionary<TKey, TValue> obj)
         {
@@ -14,10 +13,9 @@ namespace Diese.Modelization.Collections
         }
     }
 
-    public sealed class ConfigurationDataDictionary<TKey, TValue, TKeyData, TValueData> :
-        DataModelDictionary<TKey, TValue, TKeyData, TValueData>, IConfigurationData<Dictionary<TKey, TValue>>
-        where TKeyData : IConfigurationData<TKey>, new()
-        where TValueData : IConfigurationData<TValue>, new()
+    public sealed class ConfigurationDataDictionary<TKey, TValue, TKeyData, TValueData> : DataModelDictionary<TKey, TValue, TKeyData, TValueData>, IConfigurator<Dictionary<TKey, TValue>>
+        where TKeyData : IDataModel<TKey>, IConfigurator<TKey>, new()
+        where TValueData : IDataModel<TValue>, IConfigurator<TValue>, new()
     {
         public void Configure(Dictionary<TKey, TValue> obj)
         {

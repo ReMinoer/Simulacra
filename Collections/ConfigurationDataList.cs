@@ -2,8 +2,8 @@
 
 namespace Diese.Modelization.Collections
 {
-    public sealed class ConfigurationDataList<T, TData> : DataModelList<T, TData>, IConfigurationData<ICollection<T>>
-        where TData : IConfigurationData<T>, new()
+    public sealed class ConfigurationDataList<T, TData> : DataModelList<T, TData>, IConfigurator<ICollection<T>>
+        where TData : IDataModel<T>, IConfigurator<T>, new()
     {
         public void Configure(ICollection<T> obj)
         {

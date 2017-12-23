@@ -3,7 +3,6 @@
 namespace Diese.Modelization.Collections
 {
     public class DataModelList<T> : List<T>, IDataModel<ICollection<T>>
-        where T : new()
     {
         public void From(ICollection<T> obj)
         {
