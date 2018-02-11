@@ -41,6 +41,7 @@
     <Compile Include="Collections\CreationDataList.cs" />
     <Compile Include="Collections\DataModelDictionary.cs" />
     <Compile Include="Collections\DataModelList.cs" />
+    <Compile Include="ICompositeConfigurator.cs" />
     <Compile Include="IDataBindable.cs" />
     <Compile Include="IConfigurator.cs" />
     <Compile Include="ICreator.cs" />
