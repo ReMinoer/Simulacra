@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Diese.Modelization.Collections
+namespace Simulacra.Collections
 {
     public class DataModelList<T> : List<T>, IDataModel<ICollection<T>>
     {

@@ -1,4 +1,4 @@
-﻿namespace Diese.Modelization
+﻿namespace Simulacra
 {
     public interface IConfigurator<in T>
     {

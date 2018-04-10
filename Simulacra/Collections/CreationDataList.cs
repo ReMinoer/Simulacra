@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Diese.Modelization.Collections
+namespace Simulacra.Collections
 {
     public sealed class CreationDataList<T> : DataModelList<T>, ICreator<ICollection<T>>, IConfigurator<ICollection<T>>
     {

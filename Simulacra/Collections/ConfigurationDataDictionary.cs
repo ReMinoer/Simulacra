@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Diese.Modelization.Collections
+namespace Simulacra.Collections
 {
     public sealed class ConfigurationDataDictionary<TKey, TValue, TValueData> : DataModelDictionary<TKey, TValue, TValueData>, IConfigurator<Dictionary<TKey, TValue>>
         where TValueData : IDataModel<TValue>, IConfigurator<TValue>, new()

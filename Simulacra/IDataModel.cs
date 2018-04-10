@@ -1,4 +1,4 @@
-﻿namespace Diese.Modelization
+﻿namespace Simulacra
 {
     public interface IDataModel<in T>
     {

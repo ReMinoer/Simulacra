@@ -1,7 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Diese.Modelization
+namespace Simulacra
 {
     public interface ICompositeConfigurator<in T> : IConfigurator<T>
     {

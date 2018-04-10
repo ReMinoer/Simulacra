@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Diese.Modelization.Collections
+namespace Simulacra.Collections
 {
     public sealed class ConfigurationDataList<T, TData> : DataModelList<T, TData>, IConfigurator<ICollection<T>>
         where TData : IDataModel<T>, IConfigurator<T>, new()

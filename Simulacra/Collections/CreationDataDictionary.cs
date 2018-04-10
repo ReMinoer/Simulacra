@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Diese.Modelization.Collections
+namespace Simulacra.Collections
 {
     public sealed class CreationDataDictionary<TKey, TValue> : DataModelDictionary<TKey, TValue>, ICreator<Dictionary<TKey, TValue>>, IConfigurator<Dictionary<TKey, TValue>>
     {
