@@ -1,11 +1,11 @@
 ﻿namespace Simulacra
 {
-    public interface IDataBindable
+    public interface IBindableData
     {
         object BindedObject { get; }
     }
     
-    public interface IDataBindable<out T> : IDataBindable
+    public interface IBindableData<out T> : IBindableData
     {
         new T BindedObject { get; }
     }

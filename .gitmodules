@@ -1,0 +1,4 @@
+[submodule "External/Niddle"]
+	path = External/Niddle
+	url = https://github.com/ReMinoer/Niddle.git
+	branch = master

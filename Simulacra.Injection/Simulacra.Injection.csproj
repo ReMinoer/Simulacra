@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\External\Niddle\Niddle\Niddle.csproj" />
+    <ProjectReference Include="..\Simulacra\Simulacra.csproj" />
+  </ItemGroup>
+
+</Project>
