@@ -59,7 +59,7 @@ namespace Simulacra.Binding.Base
             BindObject(binding);
         }
 
-        private void OnModelObjectChanged(object sender, TEventArgs e)
+        protected void OnModelObjectChanged(object sender, TEventArgs e)
         {
             if (!_bindedObjects.TryGetValue(sender, out List<IOneWayBinding<TModel, TView, TEventArgs>> bindingList))
                 return;
