@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Simulacra.Binding
+namespace Simulacra.Binding.Base
 {
     public abstract class BindingModuleBase<TModel, TView> : IBindingModule<TView>
         where TModel : class
