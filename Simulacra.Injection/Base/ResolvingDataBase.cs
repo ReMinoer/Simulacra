@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Niddle;
 using Simulacra.Binding;
+using Simulacra.Binding.Array;
 using Simulacra.Binding.Collection;
 using Simulacra.Binding.Property;
 using Simulacra.Injection.Utils;
@@ -15,8 +16,10 @@ namespace Simulacra.Injection.Base
     {
         static public PropertyBindingCollection<TData, T> PropertyBindings { get; }
         static public CollectionBindingCollection<TData, T> CollectionBindings { get; }
-        
-        private readonly BindingManager<T> _bindingManager;
+        static public ArrayBindingCollection<TData, T> ArrayBindings { get; }
+
+        protected readonly TData Owner;
+        protected readonly BindingManager<T> BindingManager;
         protected abstract IEnumerable<TSubConfigurator> SubConfiguratorsBase { get; }
 
         private T _bindedObject;
@@ -34,6 +37,7 @@ namespace Simulacra.Injection.Base
         }
 
         private IDependencyResolver _dependencyResolver;
+
         public virtual IDependencyResolver DependencyResolver
         {
             protected get => _dependencyResolver;
@@ -47,18 +51,20 @@ namespace Simulacra.Injection.Base
         {
             PropertyBindings = new PropertyBindingCollection<TData, T>();
             CollectionBindings = new CollectionBindingCollection<TData, T>();
+            ArrayBindings = new ArrayBindingCollection<TData, T>();
         }
 
         protected ResolvingDataBase()
         {
-            var owner = (TData)this;
+            Owner = (TData)this;
 
-            _bindingManager = new BindingManager<T>
+            BindingManager = new BindingManager<T>
             {
                 Modules =
                 {
-                    new PropertyBindingModule<TData, T>(owner, PropertyBindings),
-                    new CollectionBindingModule<TData, T>(owner, CollectionBindings)
+                    new PropertyBindingModule<TData, T>(Owner, PropertyBindings),
+                    new CollectionBindingModule<TData, T>(Owner, CollectionBindings),
+                    new ArrayBindingModule<TData, T>(Owner, ArrayBindings)
                 }
             };
         }
@@ -69,14 +75,14 @@ namespace Simulacra.Injection.Base
                 throw new InvalidOperationException();
 
             BindedObject = Create();
-            _bindingManager.BindView(BindedObject);
+            BindingManager.BindView(BindedObject);
 
             IsInstantiated = true;
         }
 
         public virtual void Dispose()
         {
-            _bindingManager.UnbindView();
+            BindingManager.UnbindView();
 
             DisposeBindedObject();
 
@@ -100,7 +106,7 @@ namespace Simulacra.Injection.Base
             if (obj == null)
                 return;
 
-            _bindingManager.InitializeView(obj);
+            BindingManager.InitializeView(obj);
 
             foreach (TSubConfigurator subConfigurator in SubConfiguratorsBase)
                 subConfigurator.Configure(obj);
