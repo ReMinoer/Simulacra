@@ -82,5 +82,14 @@ namespace Simulacra.Utils
 
             return true;
         }
+
+        static public bool ContainsIndexes(this IArray array, params int[] indexes)
+        {
+            for (int r = 0; r < array.Rank; r++)
+                if (indexes[r] < 0 || indexes[r] >= array.GetLength(r))
+                    return false;
+
+            return true;
+        }
     }
 }
