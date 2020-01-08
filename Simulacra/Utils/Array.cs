@@ -100,6 +100,7 @@ namespace Simulacra.Utils
             public Enumerator(Array<T> array)
             {
                 _array = array;
+                Reset();
             }
 
             public T Current => _array._getter(_indexes);

@@ -50,13 +50,15 @@ namespace Simulacra.Binding.Array
 
             System.Array values = e.NewValues;
             var valueIndexes = new int[e.NewValues.Rank];
-
-            while (values.MoveToNextIndex(valueIndexes))
+            
+            while (true)
             {
+                SetCellValue(model, view, array, arrayIndexes, (TModelItem)values.GetValue(valueIndexes));
+
+                if (!values.MoveToNextIndex(valueIndexes))
+                    break;
                 if (!array.MoveToNextIndex(arrayIndexes))
                     throw new InvalidOperationException();
-
-                SetCellValue(model, view, array, arrayIndexes, (TModelItem)values.GetValue(valueIndexes));
             }
         }
 
