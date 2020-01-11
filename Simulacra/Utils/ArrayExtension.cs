@@ -95,5 +95,15 @@ namespace Simulacra.Utils
 
             return true;
         }
+
+        static public IArray<TNewValue> Retype<TOldValue, TNewValue>(this IArray<TOldValue> array, Func<TOldValue, TNewValue> getter)
+        {
+            return new RetypedArray<TOldValue, TNewValue>(array, getter);
+        }
+
+        static public IWriteableArray<TNewValue> Retype<TOldValue, TNewValue>(this IWriteableArray<TOldValue> array, Func<TOldValue, TNewValue> getter, Action<TOldValue, TNewValue> setter)
+        {
+            return new RetypedWriteableArray<TOldValue, TNewValue>(array, getter, setter);
+        }
     }
 }
