@@ -105,9 +105,9 @@ namespace Simulacra.Utils
 
             public T Current => _array._getter(_indexes);
             object IEnumerator.Current => Current;
-            
-            public void Reset() => _indexes = new int[_array.Rank];
-            public bool MoveNext() => _array.MoveToNextIndex(_indexes);
+
+            public void Reset() => _indexes = _array.GetResetIndex();
+            public bool MoveNext() => _array.MoveIndex(_indexes);
 
             public void Dispose()
             {

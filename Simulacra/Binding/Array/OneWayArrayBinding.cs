@@ -31,14 +31,18 @@ namespace Simulacra.Binding.Array
 
             if (array != null && referenceArray.Lengths().SequenceEqual(array.Lengths()))
             {
-                foreach (int[] indexes in referenceArray.Indexes())
+                int[] indexes = referenceArray.GetResetIndex();
+                while (referenceArray.MoveIndex(indexes))
                     SetCellValue(model, view, array, indexes, referenceArray[indexes]);
             }
             else
             {
                 TViewArray newArray = _arrayCreator(referenceArray.Lengths().ToArray());
-                foreach (int[] indexes in referenceArray.Indexes())
+
+                int[] indexes = referenceArray.GetResetIndex();
+                while (referenceArray.MoveIndex(indexes))
                     SetCellValue(model, view, newArray, indexes, referenceArray[indexes]);
+
                 _arraySetter(view, newArray);
             }
         }
@@ -49,15 +53,15 @@ namespace Simulacra.Binding.Array
             int[] arrayIndexes = e.StartingIndexes.ToArray();
 
             System.Array values = e.NewValues;
-            var valueIndexes = new int[e.NewValues.Rank];
+            var valueIndexes = e.NewValues.GetInitialIndex();
             
             while (true)
             {
                 SetCellValue(model, view, array, arrayIndexes, (TModelItem)values.GetValue(valueIndexes));
 
-                if (!values.MoveToNextIndex(valueIndexes))
+                if (!values.MoveIndex(valueIndexes))
                     break;
-                if (!array.MoveToNextIndex(arrayIndexes))
+                if (!array.MoveIndex(arrayIndexes))
                     throw new InvalidOperationException();
             }
         }

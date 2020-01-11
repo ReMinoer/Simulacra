@@ -15,26 +15,6 @@ namespace Simulacra.Utils
         static public IWriteableArray<T> AsGeneric<T>(this T[,,,] array) => new Array<T>(array);
         static public IWriteableArray<T> AsGeneric<T>(this Array array) => new Array<T>(array);
 
-        static public IEnumerable<int[]> Indexes(this Array array)
-        {
-            var indexes = new int[array.Rank];
-            do
-            {
-                yield return indexes;
-            }
-            while (array.MoveToNextIndex(indexes));
-        }
-
-        static public IEnumerable<int[]> Indexes(this IArray array)
-        {
-            var indexes = new int[array.Rank];
-            do
-            {
-                yield return indexes;
-            }
-            while (array.MoveToNextIndex(indexes));
-        }
-
         static public IEnumerable<int> Lengths(this Array array)
         {
             return Enumerable.Range(0, array.Rank).Select(array.GetLength);
@@ -45,7 +25,31 @@ namespace Simulacra.Utils
             return Enumerable.Range(0, array.Rank).Select(array.GetLength);
         }
 
-        static public bool MoveToNextIndex(this Array array, int[] indexes)
+        static public int[] GetInitialIndex(this Array array)
+        {
+            return new int[array.Rank];
+        }
+
+        static public int[] GetInitialIndex(this IArray array)
+        {
+            return new int[array.Rank];
+        }
+
+        static public int[] GetResetIndex(this Array array)
+        {
+            var indexes = new int[array.Rank];
+            indexes[array.Rank - 1]--;
+            return indexes;
+        }
+
+        static public int[] GetResetIndex(this IArray array)
+        {
+            var indexes = new int[array.Rank];
+            indexes[array.Rank - 1]--;
+            return indexes;
+        }
+
+        static public bool MoveIndex(this Array array, int[] indexes)
         {
             indexes[array.Rank - 1]++;
 
@@ -64,7 +68,7 @@ namespace Simulacra.Utils
             return true;
         }
 
-        static public bool MoveToNextIndex(this IArray array, int[] indexes)
+        static public bool MoveIndex(this IArray array, int[] indexes)
         {
             indexes[array.Rank - 1]++;
 
