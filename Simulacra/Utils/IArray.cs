@@ -12,4 +12,24 @@ namespace Simulacra.Utils
     {
         T this[params int[] indexes] { get; }
     }
+
+    public interface IOneDimensionArray<out T> : IArray<T>
+    {
+        T this[int i] { get; }
+    }
+
+    public interface ITwoDimensionArray<out T> : IArray<T>
+    {
+        T this[int i, int j] { get; }
+    }
+
+    public interface IThreeDimensionArray<out T> : IArray<T>
+    {
+        T this[int i, int j, int k] { get; }
+    }
+
+    public interface IFourDimensionArray<out T> : IArray<T>
+    {
+        T this[int i, int j, int k, int l] { get; }
+    }
 }

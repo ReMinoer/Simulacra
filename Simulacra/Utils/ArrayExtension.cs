@@ -6,14 +6,14 @@ namespace Simulacra.Utils
 {
     static public class ArrayExtension
     {
-        static public IWriteableArray<T> AsGeneric<T>(this T[] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this T[][] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this T[][][] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this T[][][][] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this T[,] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this T[,,] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this T[,,,] array) => new Array<T>(array);
-        static public IWriteableArray<T> AsGeneric<T>(this Array array) => new Array<T>(array);
+        static public IOneDimensionWriteableArray<T> AsGeneric<T>(this T[] array) => new OneDimensionArray<T>(array);
+        static public ITwoDimensionWriteableArray<T> AsGeneric<T>(this T[][] array) => new TwoDimensionArray<T>(array);
+        static public IThreeDimensionWriteableArray<T> AsGeneric<T>(this T[][][] array) => new ThreeDimensionArray<T>(array);
+        static public IFourDimensionWriteableArray<T> AsGeneric<T>(this T[][][][] array) => new FourDimensionArray<T>(array);
+        static public ITwoDimensionWriteableArray<T> AsGeneric<T>(this T[,] array) => new TwoDimensionArray<T>(array);
+        static public IThreeDimensionWriteableArray<T> AsGeneric<T>(this T[,,] array) => new ThreeDimensionArray<T>(array);
+        static public IFourDimensionWriteableArray<T> AsGeneric<T>(this T[,,,] array) => new FourDimensionArray<T>(array);
+        static public IWriteableArray<T> AsGeneric<T>(this Array array) => new UnknownDimensionArray<T>(array);
 
         static public IEnumerable<int> Lengths(this Array array)
         {
