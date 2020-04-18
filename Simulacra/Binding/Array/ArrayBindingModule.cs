@@ -14,12 +14,6 @@ namespace Simulacra.Binding.Array
         {
         }
 
-        public override void BindView(TView view)
-        {
-            base.BindView(view);
-
-        }
-
         protected override void Subscribe(INotifyArrayChanged eventSource) => eventSource.ArrayChanged += OnModelObjectChanged;
         protected override void Unsubscribe(INotifyArrayChanged eventSource) => eventSource.ArrayChanged -= OnModelObjectChanged;
     }
