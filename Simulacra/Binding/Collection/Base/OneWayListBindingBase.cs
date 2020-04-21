@@ -58,7 +58,7 @@ namespace Simulacra.Binding.Collection.Base
         protected void MoveItems(TModel model, IEnumerable<TModelItem> modelItems, int index, TView view)
         {
             modelItems = modelItems.ToArray();
-            MoveViewItems(view, modelItems.Select(x => GetBindedViewItem(view, x)), model, modelItems, index);
+            MoveViewItems(view, modelItems.Select(x => GetBindedViewItem(view, model, x)), model, modelItems, index);
         }
     }
 }

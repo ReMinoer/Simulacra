@@ -43,6 +43,6 @@ namespace Simulacra.Binding.Collection
         protected override void RemoveViewItem(TView view, TViewItem viewItem, TModel model, TModelItem modelItem) => _collectionGetter(view).Remove(viewItem);
         protected override void DisposeViewItem(TView view, TViewItem viewItem) => _viewItemDisposer?.Invoke(viewItem);
         protected override TViewItem CreateBindedViewItem(TView view, TModel model, TModelItem modelItem) => _itemConverter(model, modelItem, view);
-        protected override TViewItem GetBindedViewItem(TView view, TModelItem modelItem) => _collectionGetter(view).First(x => _itemEquality(modelItem, x));
+        protected override TViewItem GetBindedViewItem(TView view, TModel model, TModelItem modelItem) => _collectionGetter(view).First(x => _itemEquality(modelItem, x));
     }
 }

@@ -61,7 +61,7 @@ namespace Simulacra.Binding.Collection.Base
         protected abstract void RemoveViewItem(TView view, TViewItem viewItem, TModel model, TModelItem modelItem);
         protected abstract void DisposeViewItem(TView view, TViewItem viewItem);
         protected abstract TViewItem CreateBindedViewItem(TView view, TModel model, TModelItem modelItem);
-        protected abstract TViewItem GetBindedViewItem(TView view, TModelItem modelItem);
+        protected abstract TViewItem GetBindedViewItem(TView view, TModel model, TModelItem modelItem);
 
         private void AddItems(TModel model, IEnumerable<TModelItem> modelItems, TView view)
         {
@@ -76,7 +76,7 @@ namespace Simulacra.Binding.Collection.Base
         {
             foreach (TModelItem modelItem in modelItems)
             {
-                TViewItem viewItem = GetBindedViewItem(view, modelItem);
+                TViewItem viewItem = GetBindedViewItem(view, model, modelItem);
                 RemoveViewItem(view, viewItem, model, modelItem);
                 DisposeViewItem(view, viewItem);
             }

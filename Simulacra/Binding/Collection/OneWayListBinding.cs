@@ -44,7 +44,7 @@ namespace Simulacra.Binding.Collection
         protected override void RemoveViewItem(TView view, TViewItem viewItem, TModel model, TModelItem modelItem) => _listGetter(view).Remove(viewItem);
         protected override void DisposeViewItem(TView view, TViewItem viewItem) => _viewItemDisposer?.Invoke(viewItem);
         protected override TViewItem CreateBindedViewItem(TView view, TModel model, TModelItem modelItem) => _itemConverter(model, modelItem, view);
-        protected override TViewItem GetBindedViewItem(TView view, TModelItem modelItem) => _listGetter(view).First(x => _itemEquality(modelItem, x));
+        protected override TViewItem GetBindedViewItem(TView view, TModel model, TModelItem modelItem) => _listGetter(view).First(x => _itemEquality(modelItem, x));
 
         protected override void InsertViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index) => _listGetter(view).InsertMany(index, viewItems);
         protected override void ReplaceViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int oldIndex, int newIndex) => _listGetter(view).ReplaceRange(oldIndex, newIndex, viewItems);
