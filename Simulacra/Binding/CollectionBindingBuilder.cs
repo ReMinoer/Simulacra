@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using Simulacra.Binding.Collection;
+using Simulacra.Binding.Utils;
 
 namespace Simulacra.Binding
 {
-    static public class CollectionBindingBuilder
+    static public class CollectionBindingCollectionExtension
     {
         static public CollectionBindingBuilder<TModel, TView, TModelItem, TModelItem> From<TModel, TView, TModelItem>(
             this CollectionBindingCollection<TModel, TView> bindingCollection,
             Expression<Func<TModel, IEnumerable<TModelItem>>> modelPropertyGetterExpression)
         {
-            var memberExpression = (MemberExpression)modelPropertyGetterExpression.Body;
+            MemberExpression memberExpression = ExpressionUtils.GetPropertyMemberExpression(modelPropertyGetterExpression);
             string propertyName = memberExpression.Member.Name;
 
             UnaryExpression eventSourceGetterExpression = Expression.Convert(memberExpression, typeof(INotifyCollectionChanged));
@@ -47,7 +48,7 @@ namespace Simulacra.Binding
     {
         CollectionBindingCollection<TModel, TView> BindingCollection { get; }
         string ReferencePropertyName { get; set; }
-        Func<TModel, INotifyCollectionChanged> EventSourceGetter { get; set; }
+        Func<TModel, INotifyCollectionChanged> SubscriptionGetter { get; set; }
     }
 
     public interface ICollectionBindingBuilder<TModel, TView, TModelItem, TViewItem> : ICollectionBindingBuilder<TModel, TView>
@@ -64,7 +65,7 @@ namespace Simulacra.Binding
     {
         private readonly CollectionBindingCollection<TModel, TView> _bindingCollection;
         private string _referencePropertyName;
-        private Func<TModel, INotifyCollectionChanged> _eventSourceGetter;
+        private Func<TModel, INotifyCollectionChanged> _subscriptionGetter;
 
         private Func<TModel, IEnumerable<TModelItem>> _referenceGetter;
         private Func<TModel, TModelItem, TView, TViewItem> _itemConverter;
@@ -74,7 +75,7 @@ namespace Simulacra.Binding
         public CollectionBindingBuilder(
             CollectionBindingCollection<TModel, TView> bindingCollection,
             string referencePropertyName,
-            Func<TModel, INotifyCollectionChanged> eventSourceGetter,
+            Func<TModel, INotifyCollectionChanged> subscriptionGetter,
             Func<TModel, IEnumerable<TModelItem>> referenceGetter,
             Func<TModel, TModelItem, TView, TViewItem> itemConverter,
             Func<TModelItem, TViewItem, bool> itemEquality
@@ -83,7 +84,7 @@ namespace Simulacra.Binding
             _bindingCollection = bindingCollection;
             _referencePropertyName = referencePropertyName;
             _referenceGetter = referenceGetter;
-            _eventSourceGetter = eventSourceGetter;
+            _subscriptionGetter = subscriptionGetter;
             _itemConverter = itemConverter;
             _itemEquality = itemEquality;
         }
@@ -92,7 +93,7 @@ namespace Simulacra.Binding
         {
             _bindingCollection = builder.BindingCollection;
             _referencePropertyName = builder.ReferencePropertyName;
-            _eventSourceGetter = builder.EventSourceGetter;
+            _subscriptionGetter = builder.SubscriptionGetter;
         }
 
         public void To(Func<TView, ICollection<TViewItem>> collectionGetter)
@@ -104,7 +105,7 @@ namespace Simulacra.Binding
                     _itemConverter,
                     _itemEquality,
                     _viewItemDisposer
-                    ).AsEventBinding(_eventSourceGetter));
+                    ).AsSubscriptionBinding(_subscriptionGetter));
         }
 
         #region Explicit
@@ -115,10 +116,10 @@ namespace Simulacra.Binding
             get => _referencePropertyName;
             set => _referencePropertyName = value;
         }
-        Func<TModel, INotifyCollectionChanged> ICollectionBindingBuilder<TModel, TView>.EventSourceGetter
+        Func<TModel, INotifyCollectionChanged> ICollectionBindingBuilder<TModel, TView>.SubscriptionGetter
         {
-            get => _eventSourceGetter;
-            set => _eventSourceGetter = value;
+            get => _subscriptionGetter;
+            set => _subscriptionGetter = value;
         }
         Func<TModel, IEnumerable<TModelItem>> ICollectionBindingBuilder<TModel, TView, TModelItem, TViewItem>.ReferenceGetter
         {

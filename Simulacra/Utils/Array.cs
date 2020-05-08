@@ -137,7 +137,7 @@ namespace Simulacra.Utils
         public int Rank => _data.Rank;
         public int GetLength(int dimension) => _data.GetLength(dimension);
 
-        public event EventHandler<ArrayChangedEventArgs> ArrayChanged;
+        public event ArrayChangedEventHandler ArrayChanged;
         
         protected ArrayBase(Array data, Func<int[], T> getter, Action<int[], T> setter)
         {

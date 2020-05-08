@@ -4,11 +4,18 @@ namespace Simulacra.Binding
 {
     static public class OneWayBindingExtension
     {
-        static public OneWayEventBinding<TModel, TView, TNotification, TEventSource> AsEventBinding<TModel, TView, TNotification, TEventSource>(
-            this IOneWayBinding<TModel, TView, TNotification> binding,
-            Func<TModel, TEventSource> eventSourceGetter)
+        static public OneWaySubscriptionBinding<TModel, TView, TSubscription> AsSubscriptionBinding<TModel, TView, TSubscription>(
+            this IOneWayBinding<TModel, TView> binding,
+            Func<TModel, TSubscription> subscriptionGetter)
         {
-            return new OneWayEventBinding<TModel, TView, TNotification, TEventSource>(binding, eventSourceGetter);
+            return new OneWaySubscriptionBinding<TModel, TView, TSubscription>(binding, subscriptionGetter);
+        }
+
+        static public OneWaySubscriptionBinding<TModel, TView, TSubscription, TNotification> AsSubscriptionBinding<TModel, TView, TSubscription, TNotification>(
+            this IOneWayBinding<TModel, TView, TNotification> binding,
+            Func<TModel, TSubscription> subscriptionGetter)
+        {
+            return new OneWaySubscriptionBinding<TModel, TView, TSubscription, TNotification>(binding, subscriptionGetter);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Simulacra.Injection.Binding
     static public class PropertyBindingsExtension
     {
         static public void To<TModel, TView, TModelValue>(
-            this IPropertyBindingBuilder<TModel, TView, TModelValue> binding,
+            this IBindingBuilder<TModel, TView, TModelValue> binding,
             Expression<Func<TView, TModelValue>> viewGetterExpression,
             IInjectionExpression injectionExpression = null)
         {
@@ -26,7 +26,7 @@ namespace Simulacra.Injection.Binding
         }
 
         static public void Configure<TModel, TView, TModelValue, TViewValue>(
-            this IPropertyBindingBuilder<TModel, TView, TModelValue> binding,
+            this IBindingBuilder<TModel, TView, TModelValue> binding,
             Expression<Func<TView, TModelValue>> viewGetterExpression)
             where TModelValue : IConfigurator<TViewValue>
         {

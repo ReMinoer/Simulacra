@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Linq.Expressions;
 using Simulacra.Binding.Array;
+using Simulacra.Binding.Utils;
 using Simulacra.Utils;
 
 namespace Simulacra.Binding
 {
-    static public class ArrayBindingBuilder
+    static public class ArrayBindingCollectionExtension
     {
         static public ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem> From<TModel, TView, TModelItem>(
             this ArrayBindingCollection<TModel, TView> bindingCollection,
             Expression<Func<TModel, IArray<TModelItem>>> modelPropertyGetterExpression)
         {
-            var memberExpression = (MemberExpression)modelPropertyGetterExpression.Body;
+            MemberExpression memberExpression = ExpressionUtils.GetPropertyMemberExpression(modelPropertyGetterExpression);
             string propertyName = memberExpression.Member.Name;
 
             UnaryExpression eventSourceGetterExpression = Expression.Convert(memberExpression, typeof(INotifyArrayChanged));
@@ -60,7 +61,7 @@ namespace Simulacra.Binding
     {
         ArrayBindingCollection<TModel, TView> BindingCollection { get; }
         string ReferencePropertyName { get; set; }
-        Func<TModel, INotifyArrayChanged> EventSourceGetter { get; set; }
+        Func<TModel, INotifyArrayChanged> SubscriptionGetter { get; set; }
     }
 
     public interface IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem> : IArrayBindingBuilder<TModel, TView>
@@ -77,7 +78,7 @@ namespace Simulacra.Binding
     {
         private readonly ArrayBindingCollection<TModel, TView> _bindingCollection;
         private string _referencePropertyName;
-        private Func<TModel, INotifyArrayChanged> _eventSourceGetter;
+        private Func<TModel, INotifyArrayChanged> _subscriptionGetter;
 
         private Func<TModel, IArray<TModelItem>> _referenceGetter;
         private Func<TModel, TModelItem, TView, TViewItem> _itemConverter;
@@ -86,7 +87,7 @@ namespace Simulacra.Binding
         public ArrayBindingBuilder(
             ArrayBindingCollection<TModel, TView> bindingCollection,
             string referencePropertyName,
-            Func<TModel, INotifyArrayChanged> eventSourceGetter,
+            Func<TModel, INotifyArrayChanged> subscriptionGetter,
             Func<TModel, IArray<TModelItem>> referenceGetter,
             Func<TModel, TModelItem, TView, TViewItem> itemConverter
         )
@@ -94,7 +95,7 @@ namespace Simulacra.Binding
             _bindingCollection = bindingCollection;
             _referencePropertyName = referencePropertyName;
             _referenceGetter = referenceGetter;
-            _eventSourceGetter = eventSourceGetter;
+            _subscriptionGetter = subscriptionGetter;
             _itemConverter = itemConverter;
         }
 
@@ -102,7 +103,7 @@ namespace Simulacra.Binding
         {
             _bindingCollection = builder.BindingCollection;
             _referencePropertyName = builder.ReferencePropertyName;
-            _eventSourceGetter = builder.EventSourceGetter;
+            _subscriptionGetter = builder.SubscriptionGetter;
         }
 
         public void To<TViewArray>(Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator)
@@ -116,7 +117,7 @@ namespace Simulacra.Binding
                     arrayCreator,
                     _itemConverter,
                     _viewItemDisposer
-                    ).AsEventBinding(_eventSourceGetter));
+                    ).AsSubscriptionBinding(_subscriptionGetter));
         }
 
         #region Explicit
@@ -127,10 +128,10 @@ namespace Simulacra.Binding
             get => _referencePropertyName;
             set => _referencePropertyName = value;
         }
-        Func<TModel, INotifyArrayChanged> IArrayBindingBuilder<TModel, TView>.EventSourceGetter
+        Func<TModel, INotifyArrayChanged> IArrayBindingBuilder<TModel, TView>.SubscriptionGetter
         {
-            get => _eventSourceGetter;
-            set => _eventSourceGetter = value;
+            get => _subscriptionGetter;
+            set => _subscriptionGetter = value;
         }
         Func<TModel, IArray<TModelItem>> IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem>.ReferenceGetter
         {

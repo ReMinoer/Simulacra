@@ -10,8 +10,12 @@
         void UpdateView(TModel model, TView view, TNotification notification);
     }
 
-    public interface IOneWayEventBinding<in TModel, in TView, in TNotification, out TEventSource> : IOneWayBinding<TModel, TView, TNotification>
+    public interface IOneWaySubscriptionBinding<in TModel, in TView, out TSubscription> : IOneWayBinding<TModel, TView>
     {
-        TEventSource GetModelEventSource(TModel model);
+        TSubscription GetSubscription(TModel model);
+    }
+
+    public interface IOneWaySubscriptionBinding<in TModel, in TView, out TSubscription, in TNotification> : IOneWaySubscriptionBinding<TModel, TView, TSubscription>, IOneWayBinding<TModel, TView, TNotification>
+    {
     }
 }

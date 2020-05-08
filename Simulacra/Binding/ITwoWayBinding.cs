@@ -10,8 +10,12 @@
         void UpdateModel(TModel model, TView view, TNotification notification);
     }
 
-    public interface ITwoWayEventBinding<in TModel, in TView, in TNotification, out TModelEventSource, out TViewEventSource> : ITwoWayBinding<TModel, TView, TNotification>, IOneWayEventBinding<TModel, TView, TNotification, TModelEventSource>
+    public interface ITwoWaySubscriptionBinding<in TModel, in TView, out TSubscription> : ITwoWayBinding<TModel, TView>, IOneWaySubscriptionBinding<TModel, TView, TSubscription>
     {
-        TViewEventSource GetViewEventSource(TModel model);
+        TSubscription GetViewSubscription(TModel model);
+    }
+
+    public interface ITwoWaySubscriptionBinding<in TModel, in TView, out TSubscription, in TNotification> : ITwoWaySubscriptionBinding<TModel, TView, TSubscription>, ITwoWayBinding<TModel, TView, TNotification>, IOneWaySubscriptionBinding<TModel, TView, TSubscription, TNotification>
+    {
     }
 }
