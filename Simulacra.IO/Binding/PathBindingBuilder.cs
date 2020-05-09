@@ -9,14 +9,14 @@ namespace Simulacra.IO.Binding
     static public class PathBindingCollectionExtension
     {
         static public PathBindingBuilder<TModel, TView, string> From<TModel, TView>(
-            this PathBindingCollection<TModel, TView> bindingCollection,
+            this IPathBindingsProvider<TModel, TView> pathBindingsProvider,
             Expression<Func<TModel, string>> modelPropertyGetterExpression)
         {
-            return bindingCollection.From(modelPropertyGetterExpression, x => x);
+            return pathBindingsProvider.From(modelPropertyGetterExpression, x => x);
         }
 
         static public PathBindingBuilder<TModel, TView, TModelValue> From<TModel, TView, TModelValue>(
-            this PathBindingCollection<TModel, TView> bindingCollection,
+            this IPathBindingsProvider<TModel, TView> pathBindingsProvider,
             Expression<Func<TModel, TModelValue>> modelPropertyGetterExpression,
             Expression<Func<TModelValue, string>> modelPropertyPathGetter)
         {
@@ -27,7 +27,7 @@ namespace Simulacra.IO.Binding
             Func<TModel, string> pathGetter = Expression.Lambda<Func<TModel, string>>(pathGetterBody, modelPropertyGetterExpression.Parameters).Compile();
             Func<TModel, TModelValue> getter = modelPropertyGetterExpression.Compile();
 
-            return new PathBindingBuilder<TModel, TView, TModelValue>(bindingCollection, propertyName, (m, v) => getter(m), pathGetter);
+            return new PathBindingBuilder<TModel, TView, TModelValue>(pathBindingsProvider.PathBindings, propertyName, (m, v) => getter(m), pathGetter);
         }
     }
 

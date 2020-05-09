@@ -9,13 +9,13 @@ namespace Simulacra.Binding
     static public class PropertyBindingCollectionExtension
     {
         static public PropertyBindingBuilder<TModel, TView, TModelValue> From<TModel, TView, TModelValue>(
-            this PropertyBindingCollection<TModel, TView> bindingCollection,
+            this IPropertyBindingsProvider<TModel, TView> propertyBindingsProvider,
             Expression<Func<TModel, TModelValue>> modelPropertyGetterExpression)
         {
             string propertyName = ExpressionUtils.GetPropertyMemberExpression(modelPropertyGetterExpression).Member.Name;
             Func<TModel, TModelValue> getter = modelPropertyGetterExpression.Compile();
 
-            return new PropertyBindingBuilder<TModel, TView, TModelValue>(bindingCollection, propertyName, (m, v) => getter(m));
+            return new PropertyBindingBuilder<TModel, TView, TModelValue>(propertyBindingsProvider.PropertyBindings, propertyName, (m, v) => getter(m));
         }
     }
 

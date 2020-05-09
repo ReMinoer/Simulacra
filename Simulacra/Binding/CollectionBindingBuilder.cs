@@ -10,7 +10,7 @@ namespace Simulacra.Binding
     static public class CollectionBindingCollectionExtension
     {
         static public CollectionBindingBuilder<TModel, TView, TModelItem, TModelItem> From<TModel, TView, TModelItem>(
-            this CollectionBindingCollection<TModel, TView> bindingCollection,
+            this ICollectionBindingsProvider<TModel, TView> collectionBindingsProvider,
             Expression<Func<TModel, IEnumerable<TModelItem>>> modelPropertyGetterExpression)
         {
             MemberExpression memberExpression = ExpressionUtils.GetPropertyMemberExpression(modelPropertyGetterExpression);
@@ -20,7 +20,7 @@ namespace Simulacra.Binding
             Func<TModel, INotifyCollectionChanged> eventSourceGetter = Expression.Lambda<Func<TModel, INotifyCollectionChanged>>(eventSourceGetterExpression, modelPropertyGetterExpression.Parameters).Compile();
             Func<TModel, IEnumerable<TModelItem>> referenceGetter = modelPropertyGetterExpression.Compile();
 
-            return new CollectionBindingBuilder<TModel, TView, TModelItem, TModelItem>(bindingCollection, propertyName, eventSourceGetter, referenceGetter, (m, x, v) => x, EqualityComparer<TModelItem>.Default.Equals);
+            return new CollectionBindingBuilder<TModel, TView, TModelItem, TModelItem>(collectionBindingsProvider.CollectionBindings, propertyName, eventSourceGetter, referenceGetter, (m, x, v) => x, EqualityComparer<TModelItem>.Default.Equals);
         }
     }
 

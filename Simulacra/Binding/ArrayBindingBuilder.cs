@@ -9,7 +9,7 @@ namespace Simulacra.Binding
     static public class ArrayBindingCollectionExtension
     {
         static public ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem> From<TModel, TView, TModelItem>(
-            this ArrayBindingCollection<TModel, TView> bindingCollection,
+            this IArrayBindingsProvider<TModel, TView> arrayBindingsProvider,
             Expression<Func<TModel, IArray<TModelItem>>> modelPropertyGetterExpression)
         {
             MemberExpression memberExpression = ExpressionUtils.GetPropertyMemberExpression(modelPropertyGetterExpression);
@@ -19,7 +19,7 @@ namespace Simulacra.Binding
             Func<TModel, INotifyArrayChanged> eventSourceGetter = Expression.Lambda<Func<TModel, INotifyArrayChanged>>(eventSourceGetterExpression, modelPropertyGetterExpression.Parameters).Compile();
             Func<TModel, IArray<TModelItem>> referenceGetter = modelPropertyGetterExpression.Compile();
             
-            return new ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem>(bindingCollection, propertyName, eventSourceGetter, referenceGetter, (m, x, v) => x);
+            return new ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem>(arrayBindingsProvider.ArrayBindings, propertyName, eventSourceGetter, referenceGetter, (m, x, v) => x);
         }
     }
 
