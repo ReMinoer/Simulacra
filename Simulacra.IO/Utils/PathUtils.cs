@@ -1,24 +1,14 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace Simulacra.IO.Utils
 {
     static public class PathUtils
     {
-        static readonly char AbsoluteSeparator = Path.DirectorySeparatorChar;
-        static readonly char RelativeSeparator = Path.AltDirectorySeparatorChar;
+        static public char AbsoluteSeparator => Path.DirectorySeparatorChar;
+        static public char RelativeSeparator => Path.AltDirectorySeparatorChar;
 
         static public string Normalize(string path) => Normalize(path, out _);
-        static public string NormalizeFolder(string path)
-        {
-            path = Normalize(path, out char separator);
-
-            // Add end separator
-            if (path[path.Length - 1] != separator)
-                path += separator;
-
-            return path;
-        }
-
         static private string Normalize(string path, out char separator)
         {
             bool isAbsolute = Path.IsPathRooted(path);
@@ -26,9 +16,41 @@ namespace Simulacra.IO.Utils
             char otherSeparator = isAbsolute ? RelativeSeparator : AbsoluteSeparator;
 
             // Use unique separator
-            path = path.Replace(otherSeparator, separator);
+            return path.Replace(otherSeparator, separator);
+        }
+
+        static public string UniqueFile(string path) => UniqueFile(path, PathCaseComparison.EnvironmentDefault);
+        static public string UniqueFile(string path, PathCaseComparison caseComparison)
+        {
+            if (IsExplicitFolderPath(path))
+                throw new ArgumentException();
+
+            // Normalize
+            path = Normalize(path);
+
+            // Change case if necessary
+            return PathComparer.TransformCase(Normalize(path), caseComparison);
+        }
+
+        static public string UniqueFolder(string path) => UniqueFolder(path, PathCaseComparison.EnvironmentDefault);
+        static public string UniqueFolder(string path, PathCaseComparison caseComparison)
+        {
+            // Normalize
+            path = Normalize(path, out char separator);
+
+            // Change case if necessary
+            path = PathComparer.TransformCase(path, caseComparison);
+
+            // Add end separator
+            if (!IsExplicitFolderPath(path, separator))
+                path += separator;
 
             return path;
         }
+
+        static public bool IsExplicitFolderPath(string path) => IsExplicitAbsoluteFolderPath(path) || IsExplicitRelativeFolderPath(path);
+        static public bool IsExplicitAbsoluteFolderPath(string path) => IsExplicitFolderPath(path, AbsoluteSeparator);
+        static public bool IsExplicitRelativeFolderPath(string path) => IsExplicitFolderPath(path, RelativeSeparator);
+        static private bool IsExplicitFolderPath(string path, char endSeparator) => path[path.Length - 1] == endSeparator;
     }
 }

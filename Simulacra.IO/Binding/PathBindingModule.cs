@@ -55,8 +55,8 @@ namespace Simulacra.IO.Binding
             base.UnbindView();
         }
 
-        protected override void Subscribe(string path, FileChangedEventHandler handler) => PathBindingModule.Watcher.Subscribe(path, handler);
-        protected override void Unsubscribe(string path, FileChangedEventHandler handler) => PathBindingModule.Watcher.Unsubscribe(handler);
+        protected override void Subscribe(string path, FileChangedEventHandler handler) => PathBindingModule.Watcher.WatchFile(path, handler);
+        protected override void Unsubscribe(string path, FileChangedEventHandler handler) => PathBindingModule.Watcher.Unwatch(handler);
 
         protected override FileChangedEventHandler GetHandler(IOneWaySubscriptionBinding<TModel, TView, string> binding)
         {

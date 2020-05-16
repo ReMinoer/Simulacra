@@ -31,12 +31,12 @@ namespace Simulacra.IO.Binding
         }
     }
 
-    public interface IFileBindingBuilder<TModel, TView, TModelValue> : IBindingBuilder<TModel, TView, TModelValue, PathBindingCollection<TModel, TView>>
+    public interface IPathBindingBuilder<TModel, TView, TModelValue> : IBindingBuilder<TModel, TView, TModelValue, PathBindingCollection<TModel, TView>>
     {
         Func<TModel, string> PathGetter { get; set; }
     }
 
-    public class PathBindingBuilder<TModel, TView, TModelValue> : BindingBuilderBase<TModel, TView, TModelValue, PathBindingCollection<TModel, TView>>, IFileBindingBuilder<TModel, TView, TModelValue>
+    public class PathBindingBuilder<TModel, TView, TModelValue> : BindingBuilderBase<TModel, TView, TModelValue, PathBindingCollection<TModel, TView>>, IPathBindingBuilder<TModel, TView, TModelValue>
     {
         private Func<TModel, string> _pathGetter;
 
@@ -59,7 +59,7 @@ namespace Simulacra.IO.Binding
 
         #region Explicit
 
-        Func<TModel, string> IFileBindingBuilder<TModel, TView, TModelValue>.PathGetter
+        Func<TModel, string> IPathBindingBuilder<TModel, TView, TModelValue>.PathGetter
         {
             get => _pathGetter;
             set => _pathGetter = value;
