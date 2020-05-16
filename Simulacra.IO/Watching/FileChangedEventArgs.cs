@@ -1,15 +1,12 @@
-﻿using System;
-
-namespace Simulacra.IO.Watching
+﻿namespace Simulacra.IO.Watching
 {
-    public class FileChangedEventArgs : EventArgs
+    public class FileChangedEventArgs : PathChangedEventArgs
     {
-        public string Path { get; }
         public FileChangeType ChangeType { get; }
 
-        public FileChangedEventArgs(string path, FileChangeType changeType)
+        public FileChangedEventArgs(string path, FileChangeType changeType, string newPath = null, string oldPath = null)
+            : base(path, newPath, oldPath)
         {
-            Path = path;
             ChangeType = changeType;
         }
     }

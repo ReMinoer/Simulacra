@@ -14,8 +14,8 @@ namespace Simulacra.IO.Binding
     {
         static public SynchronizationContext DefaultSynchronizationContext { get; set; }
 
-        static private FileFolderWatcher _watcher;
-        static public FileFolderWatcher Watcher => _watcher ?? (_watcher = new FileFolderWatcher());
+        static private PathWatcher _watcher;
+        static public PathWatcher Watcher => _watcher ?? (_watcher = new PathWatcher());
     }
 
     public class PathBindingModule<TModel, TView> : SubscriptionBindingModuleBase<TModel, TView, IOneWaySubscriptionBinding<TModel, TView, string>, string, FileChangedEventHandler>

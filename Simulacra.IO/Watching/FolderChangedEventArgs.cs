@@ -1,15 +1,12 @@
-﻿using System;
-
-namespace Simulacra.IO.Watching
+﻿namespace Simulacra.IO.Watching
 {
-    public class FolderChangedEventArgs : EventArgs
+    public class FolderChangedEventArgs : PathChangedEventArgs
     {
-        public string Path { get; }
         public FolderChangeType ChangeType { get; }
 
-        public FolderChangedEventArgs(string path, FolderChangeType changeType)
+        public FolderChangedEventArgs(string path, FolderChangeType changeType, string newPath = null, string oldPath = null)
+            : base(path, newPath, oldPath)
         {
-            Path = path;
             ChangeType = changeType;
         }
     }

@@ -48,6 +48,8 @@ namespace Simulacra.IO.Utils
             return path;
         }
 
+        static public string TrimEndSeparator(string path) => path.TrimEnd(AbsoluteSeparator, RelativeSeparator);
+
         static public bool IsExplicitFolderPath(string path) => IsExplicitAbsoluteFolderPath(path) || IsExplicitRelativeFolderPath(path);
         static public bool IsExplicitAbsoluteFolderPath(string path) => IsExplicitFolderPath(path, AbsoluteSeparator);
         static public bool IsExplicitRelativeFolderPath(string path) => IsExplicitFolderPath(path, RelativeSeparator);

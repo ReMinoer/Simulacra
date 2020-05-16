@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Utils
 {
@@ -14,7 +13,7 @@ namespace Simulacra.IO.Utils
     public enum FolderPathEquality
     {
         RespectAmbiguity,
-        ExplicitEndSeparator
+        RequireExplicitEndSeparator
     }
 
     public class PathComparer : IEqualityComparer<string>, IComparer<string>
@@ -39,24 +38,42 @@ namespace Simulacra.IO.Utils
 
         static public bool Equals(string first, string second, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
         {
+            if (first == null && second == null)
+                return true;
+            if (first == null ^ second == null)
+                return false;
+
             return string.Equals(TransformFolder(PathUtils.Normalize(first), folderEquality), TransformFolder(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
         }
 
         static public int Compare(string first, string second, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
         {
+            if (first == null && second == null)
+                return 0;
+            if (first == null)
+                return -1;
+            if (second == null)
+                return 1;
+
             return string.Compare(TransformFolder(PathUtils.Normalize(first), folderEquality), TransformFolder(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
         }
 
         static public string TransformFolder(string path, FolderPathEquality folderEquality)
         {
+            if (path == null)
+                throw new ArgumentNullException();
+
             if (folderEquality == FolderPathEquality.RespectAmbiguity)
-                path = path.TrimEnd(PathUtils.AbsoluteSeparator, PathUtils.RelativeSeparator);
+                path = PathUtils.TrimEndSeparator(path);
 
             return path;
         }
 
         static public string TransformCase(string path, PathCaseComparison caseComparison)
         {
+            if (path == null)
+                throw new ArgumentNullException();
+
             switch (caseComparison)
             {
                 case PathCaseComparison.EnvironmentDefault:

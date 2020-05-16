@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Simulacra.IO.Utils;
 using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Test.Mocking
@@ -14,6 +13,7 @@ namespace Simulacra.IO.Test.Mocking
         private readonly Dictionary<string, MockFileSystemWatcher> _watchers = new Dictionary<string, MockFileSystemWatcher>();
         private readonly HashSet<string> _existingPaths = new HashSet<string>();
 
+        public bool PathsCaseSensitive => false;
         public bool IsPathRooted(string path) => path.Length >= 2 && char.IsLetter(path[0]) && path[1] == ':';
         public bool IsExplicitFolderPath(string path) => path.EndsWith(AbsoluteSeparator);
 
@@ -24,7 +24,7 @@ namespace Simulacra.IO.Test.Mocking
             return left + right;
         }
 
-        public string GetDirectoryName(string path)
+        public string GetFolderPath(string path)
         {
             path = path.TrimEnd(AbsoluteSeparator);
 
@@ -64,68 +64,50 @@ namespace Simulacra.IO.Test.Mocking
             return path;
         }
 
-        public bool FileExists(string path) => _existingPaths.Contains(path);
-        public bool FolderExists(string path) => _existingPaths.Any(x => x.StartsWith(path));
+        public bool FileExists(string filePath) => _existingPaths.Contains(UniqueFile(filePath));
+        public bool FolderExists(string folderPath)
+        {
+            folderPath = UniqueFolder(folderPath);
+            return _existingPaths.Any(x => x.StartsWith(folderPath));
+        }
 
         private void AddPath(string path)
         {
             _existingPaths.Add(path);
 
-            //string uniquePath = path;
-            string name = GetName(path);
-            bool createPreviousPath = false;
-
             while (true)
             {
-                string folderPath = GetDirectoryName(path);
+                string folderPath = GetFolderPath(path);
                 if (folderPath == null)
                     return;
 
-                if (createPreviousPath)
-                {
-                    GetWatcher(folderPath).Create(name);
-                    createPreviousPath = false;
-                }
-
-                if (_existingPaths.Add(UniqueFolder(folderPath)))
-                    createPreviousPath = true;
+                string uniquePath = UniqueFolder(folderPath);
+                if (_existingPaths.Add(uniquePath))
+                    GetWatcher(uniquePath)?.Create();
 
                 path = folderPath;
-                //uniquePath = UniqueFolder(path);
-                name = GetName(path);
             }
         }
 
         private void RemovePath(string path)
         {
-            //string folderPath = UniqueFolder(GetDirectoryName(PathComparer.TransformFolder(path, FolderPathEquality.RespectAmbiguity)));
-
-            string[] pathsToRemoveArray = _existingPaths.Where(x => x.StartsWith(path) && x != path).ToArray();
+            string[] pathsToRemoveArray = _existingPaths.Where(x => x.StartsWith(path)).ToArray();
             foreach (string pathToRemove in pathsToRemoveArray)
-            {
-                string p = PathComparer.TransformFolder(pathToRemove, FolderPathEquality.RespectAmbiguity);
-                string folderPath = GetDirectoryName(p);
-                if (folderPath == null)
-                    return;
-
-                MockFileSystemWatcher watcher = GetWatcher(folderPath);
-                string name = GetName(p);
-
                 _existingPaths.Remove(pathToRemove);
-                watcher?.Delete(name);
-            }
-
-            _existingPaths.Remove(path);
         }
 
-        public MockFileSystemWatcher GetWatcher(string folderPath)
+        public MockFileSystemWatcher GetWatcher(string uniquePath)
         {
-            folderPath = UniqueFolder(folderPath);
-            if (!_existingPaths.Contains(folderPath))
+            if (_watchers.TryGetValue(uniquePath, out MockFileSystemWatcher watcher))
+                return watcher;
+
+            string folderPath = GetFolderPath(uniquePath);
+            if (folderPath == null)
                 return null;
 
-            if (!_watchers.TryGetValue(folderPath, out MockFileSystemWatcher watcher))
-                _watchers[folderPath] = watcher = new MockFileSystemWatcher(folderPath);
+            string name = GetName(uniquePath);
+            _watchers[uniquePath] = watcher = new MockFileSystemWatcher(folderPath, name);
+
             return watcher;
         }
 
@@ -149,12 +131,6 @@ namespace Simulacra.IO.Test.Mocking
             if (!FileExists(path))
                 throw new InvalidOperationException();
 
-            string folderPath = GetDirectoryName(path);
-            if (folderPath == null)
-                return;
-
-            string name = GetName(path);
-
             if (_batch != null)
             {
                 _batch.Add(TriggerEvent);
@@ -162,25 +138,20 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(folderPath).Change(name);
+            void TriggerEvent() => GetWatcher(path)?.Change();
         }
 
-        public void Create(string path)
+        public void Create(string uniquePath)
         {
-            AddPath(path);
-            string folderPath = GetDirectoryName(path);
+            AddPath(uniquePath);
 
-            if (!IsExplicitFolderPath(path))
+            if (!IsExplicitFolderPath(uniquePath))
             {
+                string folderPath = GetFolderPath(uniquePath);
                 if (folderPath == null || !FolderExists(UniqueFolder(folderPath)))
                     throw new InvalidOperationException();
             }
 
-            if (folderPath == null)
-                return;
-
-            string name = GetName(path);
-
             if (_batch != null)
             {
                 _batch.Add(TriggerEvent);
@@ -188,18 +159,12 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(folderPath).Create(name);
+            void TriggerEvent() => GetWatcher(uniquePath)?.Create();
         }
 
-        public void Delete(string path)
+        public void Delete(string uniquePath)
         {
-            RemovePath(path);
-
-            string folderPath = GetDirectoryName(path);
-            if (folderPath == null)
-                return;
-
-            string name = GetName(path);
+            RemovePath(uniquePath);
 
             if (_batch != null)
             {
@@ -208,19 +173,19 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(folderPath).Delete(name);
+            void TriggerEvent() => GetWatcher(uniquePath)?.Delete();
         }
 
-        public void Rename(string oldPath, string newName)
+        public void Rename(string uniqueOldPath, string uniqueNewName)
         {
-            string folderPath = GetDirectoryName(oldPath);
+            string folderPath = GetFolderPath(uniqueOldPath);
             if (folderPath == null)
                 return;
 
-            string oldName = GetName(oldPath);
+            string uniqueNewPath = Combine(folderPath, uniqueNewName);
 
-            RemovePath(oldPath);
-            AddPath(Combine(folderPath, newName));
+            RemovePath(uniqueOldPath);
+            AddPath(uniqueNewPath);
 
             if (_batch != null)
             {
@@ -229,7 +194,18 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(folderPath).Rename(oldName, newName);
+            void TriggerEvent()
+            {
+                string oldName = GetName(uniqueOldPath);
+                GetWatcher(uniqueOldPath)?.RenameTo(uniqueNewName);
+                GetWatcher(uniqueNewPath)?.RenameFrom(oldName);
+            }
+        }
+
+        public void Reset()
+        {
+            _watchers.Clear();
+            _existingPaths.Clear();
         }
     }
 }

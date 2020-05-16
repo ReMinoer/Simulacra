@@ -5,9 +5,11 @@ namespace Simulacra.IO.Watching
 {
     public class WatchableFileSystem : IWatchableFileSystem<FileSystemWatcher>
     {
+        public bool PathsCaseSensitive => PathComparer.IsEnvironmentCaseSensitive();
         public bool IsPathRooted(string path) => Path.IsPathRooted(path);
         public bool IsExplicitFolderPath(string path) => PathUtils.IsExplicitFolderPath(path);
-        public string GetDirectoryName(string path) => Path.GetDirectoryName(path);
+        public string GetFolderPath(string path) => Path.GetDirectoryName(PathUtils.TrimEndSeparator(path));
+        private string GetName(string path) => Path.GetFileName(PathUtils.TrimEndSeparator(path));
 
         public string UniqueFile(string path) => PathUtils.UniqueFile(path);
         public string UniqueFolder(string path) => PathUtils.UniqueFolder(path);
@@ -15,18 +17,18 @@ namespace Simulacra.IO.Watching
         public bool FileExists(string path) => File.Exists(path);
         public bool FolderExists(string path) => Directory.Exists(path);
 
-        public virtual FileSystemWatcher GetWatcher(string folderPath)
+        public virtual FileSystemWatcher GetWatcher(string path)
         {
-            if (!FolderExists(folderPath))
-                return null;
+            string pathRoot = Path.GetPathRoot(path);
+            string name = GetName(path);
 
-            return new FileSystemWatcher(folderPath)
+            return new FileSystemWatcher(pathRoot, name)
             {
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
+                IncludeSubdirectories = true
             };
         }
 
         IFileSystemWatcher IWatchableFileSystem.GetWatcher(string folderPath) => GetWatcher(folderPath);
-
     }
 }
