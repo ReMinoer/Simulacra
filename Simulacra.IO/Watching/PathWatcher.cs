@@ -9,6 +9,7 @@ namespace Simulacra.IO.Watching
     public class PathWatcher
     {
         private readonly IWatchableFileSystem _fileSystem;
+        private readonly IFileSystemWatcherProvider _watcherProvider;
         private readonly object _lock = new object();
 
         private readonly Dictionary<Delegate, PathHandlersBase> _handlers = new Dictionary<Delegate, PathHandlersBase>();
@@ -17,13 +18,14 @@ namespace Simulacra.IO.Watching
         public ILogger Logger { get; set; }
 
         public PathWatcher()
-            : this(WatchableFileSystem.Instance)
+            : this(WatchableFileSystem.Instance, new OptimizedWatcherProvider(WatchableFileSystem.Instance))
         {
         }
 
-        public PathWatcher(IWatchableFileSystem fileSystem)
+        public PathWatcher(IWatchableFileSystem fileSystem, IFileSystemWatcherProvider watcherProvider)
         {
             _fileSystem = fileSystem;
+            _watcherProvider = watcherProvider;
         }
 
         public void WatchFile(string path, FileChangedEventHandler handler)
@@ -115,6 +117,7 @@ namespace Simulacra.IO.Watching
 
             public IFileSystemWatcher FileSystemWatcher { get; private set; }
             public IWatchableFileSystem FileSystem => PathWatcher._fileSystem;
+            public IFileSystemWatcherProvider WatcherProvider => PathWatcher._watcherProvider;
 
             public event Action FolderCreated;
             public event Action FolderDeleted;
@@ -195,7 +198,7 @@ namespace Simulacra.IO.Watching
             {
                 if (FileSystemWatcher == null)
                 {
-                    FileSystemWatcher = FileSystem.GetWatcher(UniquePath);
+                    FileSystemWatcher = WatcherProvider.GetWatcher(UniquePath);
                     FileSystemWatcher?.Increment();
                 }
             }

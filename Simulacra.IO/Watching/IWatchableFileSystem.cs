@@ -13,13 +13,5 @@
 
         bool FileExists(string path);
         bool FolderExists(string path);
-
-        IFileSystemWatcher GetWatcher(string path);
-    }
-
-    public interface IWatchableFileSystem<out TWatcher> : IWatchableFileSystem
-        where TWatcher : IFileSystemWatcher
-    {
-        new TWatcher GetWatcher(string path);
     }
 }

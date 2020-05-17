@@ -5,19 +5,25 @@ using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Test.Mocking
 {
-    public class MockWatchableFileSystem : IWatchableFileSystem<MockFileSystemWatcher>
+    public class MockWatchableFileSystem : IWatchableFileSystem
     {
         private const char AbsoluteSeparator = '\\';
 
         private List<Action> _batch;
-        private readonly Dictionary<string, MockFileSystemWatcher> _watchers = new Dictionary<string, MockFileSystemWatcher>();
         private readonly HashSet<string> _existingPaths = new HashSet<string>();
 
         public bool PathsCaseSensitive => false;
         public bool IsPathRooted(string path) => path.Length >= 2 && char.IsLetter(path[0]) && path[1] == ':';
         public bool IsExplicitFolderPath(string path) => path.EndsWith(AbsoluteSeparator);
 
-        private string Combine(string left, string right)
+        public MockFileSystemWatcherProvider WatcherProvider { get; }
+
+        public MockWatchableFileSystem()
+        {
+            WatcherProvider = new MockFileSystemWatcherProvider(this);
+        }
+
+        static private string Combine(string left, string right)
         {
             if (!left.EndsWith(AbsoluteSeparator))
                 left += AbsoluteSeparator;
@@ -35,7 +41,7 @@ namespace Simulacra.IO.Test.Mocking
             return path.Substring(0, lastSeparator);
         }
 
-        private string GetName(string path)
+        static public string GetName(string path)
         {
             path = path.TrimEnd(AbsoluteSeparator);
 
@@ -83,7 +89,7 @@ namespace Simulacra.IO.Test.Mocking
 
                 string uniquePath = UniqueFolder(folderPath);
                 if (_existingPaths.Add(uniquePath))
-                    GetWatcher(uniquePath)?.Create();
+                    WatcherProvider.GetWatcher(uniquePath)?.Create();
 
                 path = folderPath;
             }
@@ -95,36 +101,6 @@ namespace Simulacra.IO.Test.Mocking
             foreach (string pathToRemove in pathsToRemoveArray)
                 _existingPaths.Remove(pathToRemove);
         }
-
-        public MockFileSystemWatcher GetWatcher(string uniquePath)
-        {
-            if (_watchers.TryGetValue(uniquePath, out MockFileSystemWatcher watcher))
-                return watcher;
-
-            string folderPath = GetFolderPath(uniquePath);
-            if (folderPath == null)
-                return null;
-
-            string name = GetName(uniquePath);
-            _watchers[uniquePath] = watcher = new MockFileSystemWatcher(folderPath, name);
-            watcher.FullyReleased += OnWatcherFullyReleased;
-
-            return watcher;
-        }
-
-        private void OnWatcherFullyReleased(object sender, EventArgs e)
-        {
-            KeyValuePair<string, MockFileSystemWatcher> pair = _watchers.First(x => x.Value == sender);
-            string path = pair.Key;
-            MockFileSystemWatcher watcher = pair.Value;
-
-            _watchers.Remove(path);
-
-            watcher.FullyReleased -= OnWatcherFullyReleased;
-            watcher.Dispose();
-        }
-
-        IFileSystemWatcher IWatchableFileSystem.GetWatcher(string folderPath) => GetWatcher(folderPath);
 
         public void StartBatching()
         {
@@ -151,7 +127,7 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(path)?.Change();
+            void TriggerEvent() => WatcherProvider.GetWatcher(path)?.Change();
         }
 
         public void Create(string uniquePath)
@@ -172,7 +148,7 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(uniquePath)?.Create();
+            void TriggerEvent() => WatcherProvider.GetWatcher(uniquePath)?.Create();
         }
 
         public void Delete(string uniquePath)
@@ -186,7 +162,7 @@ namespace Simulacra.IO.Test.Mocking
             }
 
             TriggerEvent();
-            void TriggerEvent() => GetWatcher(uniquePath)?.Delete();
+            void TriggerEvent() => WatcherProvider.GetWatcher(uniquePath)?.Delete();
         }
 
         public void Rename(string uniqueOldPath, string uniqueNewName)
@@ -210,15 +186,61 @@ namespace Simulacra.IO.Test.Mocking
             void TriggerEvent()
             {
                 string oldName = GetName(uniqueOldPath);
-                GetWatcher(uniqueOldPath)?.RenameTo(uniqueNewName);
-                GetWatcher(uniqueNewPath)?.RenameFrom(oldName);
+                WatcherProvider.GetWatcher(uniqueOldPath)?.RenameTo(uniqueNewName);
+                WatcherProvider.GetWatcher(uniqueNewPath)?.RenameFrom(oldName);
             }
         }
 
         public void Reset()
         {
-            _watchers.Clear();
+            WatcherProvider.Reset();
             _existingPaths.Clear();
+        }
+
+        public class MockFileSystemWatcherProvider : IFileSystemWatcherProvider<MockFileSystemWatcher>
+        {
+            private readonly MockWatchableFileSystem _fileSystem;
+            private readonly Dictionary<string, MockFileSystemWatcher> _watchers = new Dictionary<string, MockFileSystemWatcher>();
+
+            public MockFileSystemWatcherProvider(MockWatchableFileSystem fileSystem)
+            {
+                _fileSystem = fileSystem;
+            }
+
+            public MockFileSystemWatcher GetWatcher(string uniquePath)
+            {
+                if (_watchers.TryGetValue(uniquePath, out MockFileSystemWatcher watcher))
+                    return watcher;
+
+                string folderPath = _fileSystem.GetFolderPath(uniquePath);
+                if (folderPath == null)
+                    return null;
+
+                string name = GetName(uniquePath);
+                _watchers[uniquePath] = watcher = new MockFileSystemWatcher(folderPath, name);
+                watcher.FullyReleased += OnWatcherFullyReleased;
+
+                return watcher;
+            }
+
+            private void OnWatcherFullyReleased(object sender, EventArgs e)
+            {
+                KeyValuePair<string, MockFileSystemWatcher> pair = _watchers.First(x => x.Value == sender);
+                string path = pair.Key;
+                MockFileSystemWatcher watcher = pair.Value;
+
+                _watchers.Remove(path);
+
+                watcher.FullyReleased -= OnWatcherFullyReleased;
+                watcher.Dispose();
+            }
+
+            IFileSystemWatcher IFileSystemWatcherProvider.GetWatcher(string folderPath) => GetWatcher(folderPath);
+
+            public void Reset()
+            {
+                _watchers.Clear();
+            }
         }
     }
 }

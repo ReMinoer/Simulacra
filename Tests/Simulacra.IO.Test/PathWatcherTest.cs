@@ -159,7 +159,7 @@ namespace Simulacra.IO.Test
         {
             var mockSystem = new MockWatchableFileSystem();
 
-            var watcher = new PathWatcher(mockSystem)
+            var watcher = new PathWatcher(mockSystem, mockSystem.WatcherProvider)
             {
                 Logger = new ConsoleLogger()
             };
