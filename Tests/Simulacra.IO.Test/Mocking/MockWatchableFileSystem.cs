@@ -107,8 +107,21 @@ namespace Simulacra.IO.Test.Mocking
 
             string name = GetName(uniquePath);
             _watchers[uniquePath] = watcher = new MockFileSystemWatcher(folderPath, name);
+            watcher.FullyReleased += OnWatcherFullyReleased;
 
             return watcher;
+        }
+
+        private void OnWatcherFullyReleased(object sender, EventArgs e)
+        {
+            KeyValuePair<string, MockFileSystemWatcher> pair = _watchers.First(x => x.Value == sender);
+            string path = pair.Key;
+            MockFileSystemWatcher watcher = pair.Value;
+
+            _watchers.Remove(path);
+
+            watcher.FullyReleased -= OnWatcherFullyReleased;
+            watcher.Dispose();
         }
 
         IFileSystemWatcher IWatchableFileSystem.GetWatcher(string folderPath) => GetWatcher(folderPath);

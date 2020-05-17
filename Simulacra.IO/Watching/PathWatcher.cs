@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Simulacra.IO.Utils;
 
@@ -16,7 +17,7 @@ namespace Simulacra.IO.Watching
         public ILogger Logger { get; set; }
 
         public PathWatcher()
-            : this(new WatchableFileSystem())
+            : this(WatchableFileSystem.Instance)
         {
         }
 
@@ -38,7 +39,7 @@ namespace Simulacra.IO.Watching
             lock (_lock)
                 _handlers.Add(handler, new FileHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
 
-            Logger?.LogDebug($"Start watching file: {uniquePath}");
+            Logger?.LogInformation($"Start watching file: {uniquePath}");
         }
 
         public void WatchFolder(string path, FolderChangedEventHandler handler)
@@ -54,7 +55,7 @@ namespace Simulacra.IO.Watching
             lock (_lock)
                 _handlers.Add(handler, new FolderHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
 
-            Logger?.LogDebug($"Start watching folder: {uniquePath}");
+            Logger?.LogInformation($"Start watching folder: {uniquePath}");
         }
 
         public void Unwatch(FileChangedEventHandler fileHandler) => Unwatch(handler: fileHandler);
@@ -82,24 +83,26 @@ namespace Simulacra.IO.Watching
                 _sharedWatchers[uniquePath] = sharedWatcher = new SharedWatcher(uniquePath, this);
                 sharedWatcher.FullyReleased += OnSharedWatcherFullyReleased;
 
-                Logger?.LogDebug($"Create watcher for: {uniquePath}");
+                Logger?.LogDebug($"Create shared watcher for: {uniquePath}");
             }
 
             return sharedWatcher;
         }
 
-        private void OnSharedWatcherFullyReleased(string uniquePath)
+        private void OnSharedWatcherFullyReleased(object sender, EventArgs e)
         {
-            SharedWatcher sharedWatcher = _sharedWatchers[uniquePath];
+            SharedWatcher sharedWatcher = _sharedWatchers.First(x => x.Value == sender).Value;
+            string uniquePath = sharedWatcher.UniquePath;
+
             _sharedWatchers.Remove(uniquePath);
 
             sharedWatcher.FullyReleased -= OnSharedWatcherFullyReleased;
             sharedWatcher.Dispose();
 
-            Logger?.LogDebug($"Fully release watcher for: {uniquePath}");
+            Logger?.LogDebug($"Fully release shared watcher for: {uniquePath}");
         }
 
-        private class SharedWatcher : IDisposable
+        private class SharedWatcher : IShared, IDisposable
         {
             private int _counter;
 
@@ -115,7 +118,7 @@ namespace Simulacra.IO.Watching
 
             public event Action FolderCreated;
             public event Action FolderDeleted;
-            public event Action<string> FullyReleased;
+            public event EventHandler FullyReleased;
 
             public SharedWatcher(string uniquePath, PathWatcher pathWatcher)
             {
@@ -129,14 +132,14 @@ namespace Simulacra.IO.Watching
                 FolderPath = FileSystem.UniqueFolder(folderPath);
                 _parentWatcher = PathWatcher.GetSharedWatcher(FolderPath);
 
-                CreateInternalWatcherIfPossible();
+                TryGetInternalWatcher();
                 StartWatchFolder();
                 StartWatchParentFolder();
             }
 
             private void OnParentFolderCreated()
             {
-                CreateInternalWatcherIfPossible();
+                TryGetInternalWatcher();
 
                 // Notify folder creation if internal watcher has been created (meaning folder exists)
                 if (FileSystemWatcher != null)
@@ -158,7 +161,7 @@ namespace Simulacra.IO.Watching
                 {
                     case FolderChangeType.Created:
 
-                        CreateInternalWatcherIfPossible();
+                        TryGetInternalWatcher();
                         FolderCreated?.Invoke();
 
                         break;
@@ -178,7 +181,7 @@ namespace Simulacra.IO.Watching
             {
                 _counter--;
                 if (_counter <= 0)
-                    FullyReleased?.Invoke(UniquePath);
+                    FullyReleased?.Invoke(this, EventArgs.Empty);
             }
 
             public void Dispose()
@@ -188,18 +191,20 @@ namespace Simulacra.IO.Watching
                 DisposeInternalWatcher();
             }
 
-            private void CreateInternalWatcherIfPossible()
+            private void TryGetInternalWatcher()
             {
                 if (FileSystemWatcher == null)
+                {
                     FileSystemWatcher = FileSystem.GetWatcher(UniquePath);
+                    FileSystemWatcher?.Increment();
+                }
             }
 
             private void DisposeInternalWatcher()
             {
                 if (FileSystemWatcher != null)
                 {
-                    FileSystemWatcher.EnableRaisingEvents = false;
-                    FileSystemWatcher.Dispose();
+                    FileSystemWatcher.Release();
                     FileSystemWatcher = null;
                 }
             }
@@ -301,7 +306,7 @@ namespace Simulacra.IO.Watching
                 fileSystemWatcher.Created += OnCreated;
                 fileSystemWatcher.Deleted += OnDeleted;
                 fileSystemWatcher.Renamed += OnRenamed;
-                fileSystemWatcher.EnableRaisingEvents = true;
+                fileSystemWatcher.Enable();
 
                 _subscribed = true;
             }

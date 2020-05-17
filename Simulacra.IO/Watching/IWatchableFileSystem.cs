@@ -20,6 +20,6 @@
     public interface IWatchableFileSystem<out TWatcher> : IWatchableFileSystem
         where TWatcher : IFileSystemWatcher
     {
-        new TWatcher GetWatcher(string folderPath);
+        new TWatcher GetWatcher(string path);
     }
 }

@@ -34,7 +34,7 @@ namespace Simulacra.IO.Utils
 
         public bool Equals(string x, string y) => Equals(x, y, CaseComparison, FolderEquality);
         public int Compare(string x, string y) => Compare(x, y, CaseComparison, FolderEquality);
-        public int GetHashCode(string obj) => TransformCase(TransformFolder(PathUtils.Normalize(obj), FolderEquality), CaseComparison).GetHashCode();
+        public int GetHashCode(string obj) => ApplyCaseComparison(ApplyFolderEquality(PathUtils.Normalize(obj), FolderEquality), CaseComparison).GetHashCode();
 
         static public bool Equals(string first, string second, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
         {
@@ -43,7 +43,7 @@ namespace Simulacra.IO.Utils
             if (first == null ^ second == null)
                 return false;
 
-            return string.Equals(TransformFolder(PathUtils.Normalize(first), folderEquality), TransformFolder(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
+            return string.Equals(ApplyFolderEquality(PathUtils.Normalize(first), folderEquality), ApplyFolderEquality(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
         }
 
         static public int Compare(string first, string second, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
@@ -55,10 +55,10 @@ namespace Simulacra.IO.Utils
             if (second == null)
                 return 1;
 
-            return string.Compare(TransformFolder(PathUtils.Normalize(first), folderEquality), TransformFolder(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
+            return string.Compare(ApplyFolderEquality(PathUtils.Normalize(first), folderEquality), ApplyFolderEquality(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
         }
 
-        static public string TransformFolder(string path, FolderPathEquality folderEquality)
+        static public string ApplyFolderEquality(string path, FolderPathEquality folderEquality)
         {
             if (path == null)
                 throw new ArgumentNullException();
@@ -69,7 +69,7 @@ namespace Simulacra.IO.Utils
             return path;
         }
 
-        static public string TransformCase(string path, PathCaseComparison caseComparison)
+        static public string ApplyCaseComparison(string path, PathCaseComparison caseComparison)
         {
             if (path == null)
                 throw new ArgumentNullException();
@@ -78,8 +78,8 @@ namespace Simulacra.IO.Utils
             {
                 case PathCaseComparison.EnvironmentDefault:
                     if (IsEnvironmentCaseSensitive())
-                        goto case PathCaseComparison.IgnoreCase;
-                    else goto default;
+                        goto default;
+                    else goto case PathCaseComparison.IgnoreCase;
                 case PathCaseComparison.IgnoreCase:
                     return path.ToLowerInvariant();
                 default:

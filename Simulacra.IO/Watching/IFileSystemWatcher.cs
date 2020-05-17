@@ -3,12 +3,12 @@ using System.IO;
 
 namespace Simulacra.IO.Watching
 {
-    public interface IFileSystemWatcher : IDisposable
+    public interface IFileSystemWatcher : IShared, IDisposable
     {
-        bool EnableRaisingEvents { set; }
         event FileSystemEventHandler Changed;
         event FileSystemEventHandler Created;
         event FileSystemEventHandler Deleted;
         event RenamedEventHandler Renamed;
+        void Enable();
     }
 }

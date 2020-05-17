@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Test.Mocking
@@ -7,12 +8,13 @@ namespace Simulacra.IO.Test.Mocking
     {
         private readonly string _folderPath;
         private readonly string _name;
+        private int _counter;
 
-        public bool EnableRaisingEvents { private get; set; }
         public event FileSystemEventHandler Changed;
         public event FileSystemEventHandler Created;
         public event FileSystemEventHandler Deleted;
         public event RenamedEventHandler Renamed;
+        public event EventHandler FullyReleased;
 
         public MockFileSystemWatcher(string folderPath, string name)
         {
@@ -26,6 +28,17 @@ namespace Simulacra.IO.Test.Mocking
         public void RenameTo(string newName) => Renamed?.Invoke(this, new RenamedEventArgs(WatcherChangeTypes.Renamed, _folderPath, newName, _name));
         public void RenameFrom(string oldName) => Renamed?.Invoke(this, new RenamedEventArgs(WatcherChangeTypes.Renamed, _folderPath, _name, oldName));
 
-        public void Dispose() { }
+        public void Increment() => _counter++;
+        public void Enable() {}
+        public void Release()
+        {
+            _counter--;
+            if (_counter > 0)
+                return;
+
+            FullyReleased?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void Dispose() {}
     }
 }

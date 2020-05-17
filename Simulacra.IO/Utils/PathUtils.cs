@@ -29,7 +29,7 @@ namespace Simulacra.IO.Utils
             path = Normalize(path);
 
             // Change case if necessary
-            return PathComparer.TransformCase(Normalize(path), caseComparison);
+            return PathComparer.ApplyCaseComparison(Normalize(path), caseComparison);
         }
 
         static public string UniqueFolder(string path) => UniqueFolder(path, PathCaseComparison.EnvironmentDefault);
@@ -39,7 +39,7 @@ namespace Simulacra.IO.Utils
             path = Normalize(path, out char separator);
 
             // Change case if necessary
-            path = PathComparer.TransformCase(path, caseComparison);
+            path = PathComparer.ApplyCaseComparison(path, caseComparison);
 
             // Add end separator
             if (!IsExplicitFolderPath(path, separator))
@@ -49,6 +49,16 @@ namespace Simulacra.IO.Utils
         }
 
         static public string TrimEndSeparator(string path) => path.TrimEnd(AbsoluteSeparator, RelativeSeparator);
+        static public string GetFolderPath(string path)
+        {
+            string directoryName = Path.GetDirectoryName(TrimEndSeparator(path));
+            if (directoryName == null)
+                return null;
+
+            return UniqueFolder(directoryName, PathCaseComparison.IgnoreCase);
+        }
+
+        static public string GetName(string path) => Path.GetFileName(TrimEndSeparator(path));
 
         static public bool IsExplicitFolderPath(string path) => IsExplicitAbsoluteFolderPath(path) || IsExplicitRelativeFolderPath(path);
         static public bool IsExplicitAbsoluteFolderPath(string path) => IsExplicitFolderPath(path, AbsoluteSeparator);
