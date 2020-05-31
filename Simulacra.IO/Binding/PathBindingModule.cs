@@ -6,6 +6,7 @@ using System.Reactive.Subjects;
 using System.Threading;
 using Simulacra.Binding;
 using Simulacra.Binding.Base;
+using Simulacra.IO.Utils;
 using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Binding
@@ -55,8 +56,17 @@ namespace Simulacra.IO.Binding
             base.UnbindView();
         }
 
-        protected override void Subscribe(string path, FileChangedEventHandler handler) => PathBindingModule.Watcher.WatchFile(path, handler);
-        protected override void Unsubscribe(string path, FileChangedEventHandler handler) => PathBindingModule.Watcher.Unwatch(handler);
+        protected override void Subscribe(string path, FileChangedEventHandler handler)
+        {
+            if (PathUtils.IsValidAbsolutePath(path))
+                PathBindingModule.Watcher.WatchFile(path, handler);
+        }
+
+        protected override void Unsubscribe(string path, FileChangedEventHandler handler)
+        {
+            if (PathUtils.IsValidAbsolutePath(path))
+                PathBindingModule.Watcher.Unwatch(handler);
+        }
 
         protected override FileChangedEventHandler GetHandler(IOneWaySubscriptionBinding<TModel, TView, string> binding)
         {

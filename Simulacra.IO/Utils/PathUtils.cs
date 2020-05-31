@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace Simulacra.IO.Utils
 {
@@ -8,9 +9,20 @@ namespace Simulacra.IO.Utils
         static public char AbsoluteSeparator => Path.DirectorySeparatorChar;
         static public char RelativeSeparator => Path.AltDirectorySeparatorChar;
 
+        static public bool IsValidPath(string path) => IsValidPathInternal(path) && (IsValidAbsolutePathInternal(path) || IsValidRelativePathInternal(path));
+        static public bool IsValidAbsolutePath(string path) => IsValidPathInternal(path) && IsValidAbsolutePathInternal(path);
+        static public bool IsValidRelativePath(string path) => IsValidPathInternal(path) && IsValidRelativePathInternal(path);
+
+        static private bool IsValidPathInternal(string path) => !Path.GetInvalidPathChars().Any(path.Contains);
+        static private bool IsValidAbsolutePathInternal(string path) => Path.IsPathRooted(path);
+        static private bool IsValidRelativePathInternal(string path) => !Path.IsPathRooted(path) && path[0] != AbsoluteSeparator && path[0] != RelativeSeparator;
+
         static public string Normalize(string path) => Normalize(path, out _);
         static private string Normalize(string path, out char separator)
         {
+            if (!IsValidPath(path))
+                throw new ArgumentException();
+
             bool isAbsolute = Path.IsPathRooted(path);
             separator = isAbsolute ? AbsoluteSeparator : RelativeSeparator;
             char otherSeparator = isAbsolute ? RelativeSeparator : AbsoluteSeparator;
@@ -22,6 +34,8 @@ namespace Simulacra.IO.Utils
         static public string UniqueFile(string path) => UniqueFile(path, PathCaseComparison.EnvironmentDefault);
         static public string UniqueFile(string path, PathCaseComparison caseComparison)
         {
+            if (!IsValidPath(path))
+                throw new ArgumentException();
             if (IsExplicitFolderPath(path))
                 throw new ArgumentException();
 
@@ -35,6 +49,9 @@ namespace Simulacra.IO.Utils
         static public string UniqueFolder(string path) => UniqueFolder(path, PathCaseComparison.EnvironmentDefault);
         static public string UniqueFolder(string path, PathCaseComparison caseComparison)
         {
+            if (!IsValidPath(path))
+                throw new ArgumentException();
+
             // Normalize
             path = Normalize(path, out char separator);
 
@@ -51,6 +68,9 @@ namespace Simulacra.IO.Utils
         static public string TrimEndSeparator(string path) => path.TrimEnd(AbsoluteSeparator, RelativeSeparator);
         static public string GetFolderPath(string path)
         {
+            if (!IsValidPath(path))
+                throw new ArgumentException();
+
             string directoryName = Path.GetDirectoryName(TrimEndSeparator(path));
             if (directoryName == null)
                 return null;
