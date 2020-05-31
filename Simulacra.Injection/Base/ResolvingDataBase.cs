@@ -72,7 +72,10 @@ namespace Simulacra.Injection.Base
         public virtual void Instantiate()
         {
             if (BindedObject != null)
-                throw new InvalidOperationException();
+            {
+                BindingManager.UnbindView();
+                DisposeBindedObject();
+            }
 
             BindedObject = Create();
             BindingManager.BindView(BindedObject);
