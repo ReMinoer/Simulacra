@@ -6,30 +6,51 @@ namespace Simulacra.Utils
     {
         int Rank { get; }
         int GetLength(int dimension);
+        object this[params int[] indexes] { get; }
+    }
+
+    public interface IOneDimensionArray : IArray
+    {
+        object this[int i] { get; }
+    }
+
+    public interface ITwoDimensionArray : IArray
+    {
+        object this[int i, int j] { get; }
+    }
+
+    public interface IThreeDimensionArray : IArray
+    {
+        object this[int i, int j, int k] { get; }
+    }
+
+    public interface IFourDimensionArray : IArray
+    {
+        object this[int i, int j, int k, int l] { get; }
     }
 
     public interface IArray<out T> : IArray, IEnumerable<T>
     {
-        T this[params int[] indexes] { get; }
+        new T this[params int[] indexes] { get; }
     }
 
-    public interface IOneDimensionArray<out T> : IArray<T>
+    public interface IOneDimensionArray<out T> : IOneDimensionArray, IArray<T>
     {
-        T this[int i] { get; }
+        new T this[int i] { get; }
     }
 
-    public interface ITwoDimensionArray<out T> : IArray<T>
+    public interface ITwoDimensionArray<out T> : ITwoDimensionArray, IArray<T>
     {
-        T this[int i, int j] { get; }
+        new T this[int i, int j] { get; }
     }
 
-    public interface IThreeDimensionArray<out T> : IArray<T>
+    public interface IThreeDimensionArray<out T> : IThreeDimensionArray, IArray<T>
     {
-        T this[int i, int j, int k] { get; }
+        new T this[int i, int j, int k] { get; }
     }
 
-    public interface IFourDimensionArray<out T> : IArray<T>
+    public interface IFourDimensionArray<out T> : IFourDimensionArray, IArray<T>
     {
-        T this[int i, int j, int k, int l] { get; }
+        new T this[int i, int j, int k, int l] { get; }
     }
 }
