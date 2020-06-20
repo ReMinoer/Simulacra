@@ -4,36 +4,15 @@ using Simulacra.Binding.Base;
 
 namespace Simulacra.Binding.Property
 {
-    public class PropertyBindingModule<TModel, TView> : BindingModuleBase<TModel, TView>
+    public class PropertyBindingModule<TModel, TView> : ObjectChangingBindingModuleBase<TModel, TView, IOneWayBinding<TModel, TView>>
         where TModel : class, INotifyPropertyChanged
         where TView : class
     {
-        private readonly Dictionary<string, IOneWayBinding<TModel, TView>> _bindings;
+        public PropertyBindingModule(TModel model, IReadOnlyDictionary<string, IOneWayBinding<TModel, TView>> bindings)
+            : base(model, bindings) {}
 
-        protected override IEnumerable<IOneWayBinding<TModel, TView>> Bindings => _bindings.Values;
-
-        public PropertyBindingModule(TModel model, Dictionary<string, IOneWayBinding<TModel, TView>> bindings)
-            : base(model)
-        {
-            _bindings = bindings;
-        }
-
-        public override void BindView(TView view)
-        {
-            base.BindView(view);
-            Model.PropertyChanged += OnModelPropertyChanged;
-        }
-
-        public override void UnbindView()
-        {
-            Model.PropertyChanged -= OnModelPropertyChanged;
-            base.UnbindView();
-        }
-
-        private void OnModelPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (_bindings.TryGetValue(e.PropertyName, out IOneWayBinding<TModel, TView> binding))
-                binding.SetView(Model, View);
-        }
+        protected override void BindObject(IOneWayBinding<TModel, TView> binding) { }
+        protected override void UnbindObject(IOneWayBinding<TModel, TView> binding) { }
+        protected override void UnbindAllObjects() { }
     }
 }
