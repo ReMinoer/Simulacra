@@ -8,7 +8,7 @@ namespace Simulacra.Binding
 {
     static public class ArrayBindingCollectionExtension
     {
-        static public ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem> From<TModel, TView, TModelItem>(
+        static public ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem> FromArray<TModel, TView, TModelItem>(
             this IArrayBindingsProvider<TModel, TView> arrayBindingsProvider,
             Expression<Func<TModel, IArray<TModelItem>>> modelPropertyGetterExpression)
         {

@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using Niddle;
 using Simulacra.Binding;
-using Simulacra.Binding.Array;
-using Simulacra.Binding.Collection;
-using Simulacra.Binding.Property;
 using Simulacra.Injection.Utils;
 
 namespace Simulacra.Injection.Base
@@ -14,10 +11,6 @@ namespace Simulacra.Injection.Base
         where TSubConfigurator : IConfigurator<T>
         where T : class
     {
-        static public PropertyBindingCollection<TData, T> PropertyBindings { get; }
-        static public CollectionBindingCollection<TData, T> CollectionBindings { get; }
-        static public ArrayBindingCollection<TData, T> ArrayBindings { get; }
-
         protected readonly TData Owner;
         protected readonly BindingManager<T> BindingManager;
         protected abstract IEnumerable<TSubConfigurator> SubConfiguratorsBase { get; }
@@ -47,26 +40,10 @@ namespace Simulacra.Injection.Base
         IEnumerable<TSubConfigurator> ICompositeConfigurator<T, TSubConfigurator>.SubConfigurators => SubConfiguratorsBase;
         object IBindableData.BindedObject => BindedObject;
 
-        static ResolvingDataBase()
-        {
-            PropertyBindings = new PropertyBindingCollection<TData, T>();
-            CollectionBindings = new CollectionBindingCollection<TData, T>();
-            ArrayBindings = new ArrayBindingCollection<TData, T>();
-        }
-
         protected ResolvingDataBase()
         {
             Owner = (TData)this;
-
-            BindingManager = new BindingManager<T>
-            {
-                Modules =
-                {
-                    new PropertyBindingModule<TData, T>(Owner, PropertyBindings),
-                    new CollectionBindingModule<TData, T>(Owner, CollectionBindings),
-                    new ArrayBindingModule<TData, T>(Owner, ArrayBindings)
-                }
-            };
+            BindingManager = new BindingManager<T>();
         }
 
         public virtual void Instantiate()

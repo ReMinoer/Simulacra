@@ -9,7 +9,7 @@ namespace Simulacra.Binding
 {
     static public class CollectionBindingCollectionExtension
     {
-        static public CollectionBindingBuilder<TModel, TView, TModelItem, TModelItem> From<TModel, TView, TModelItem>(
+        static public CollectionBindingBuilder<TModel, TView, TModelItem, TModelItem> FromCollection<TModel, TView, TModelItem>(
             this ICollectionBindingsProvider<TModel, TView> collectionBindingsProvider,
             Expression<Func<TModel, IEnumerable<TModelItem>>> modelPropertyGetterExpression)
         {
