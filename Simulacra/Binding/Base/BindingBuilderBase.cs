@@ -20,6 +20,8 @@ namespace Simulacra.Binding.Base
 
         #region Explicit
 
+        string IBindingBuilder<TModel, TView>.Name => _propertyName;
+
         Func<TModel, TView, TModelValue> IBindingBuilder<TModel, TView, TModelValue>.Getter
         {
             get => _getter;

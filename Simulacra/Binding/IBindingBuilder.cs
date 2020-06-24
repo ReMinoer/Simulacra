@@ -4,6 +4,7 @@ namespace Simulacra.Binding
 {
     public interface IBindingBuilder<out TModel, out TView>
     {
+        string Name { get; }
         void Do(Action<TModel, TView> action);
     }
 
