@@ -63,11 +63,7 @@ namespace Simulacra.Injection.Base
         public virtual void Dispose()
         {
             BindingManager.UnbindView();
-
             DisposeBindedObject();
-
-            BindedObject = default(T);
-            IsInstantiated = false;
         }
 
         protected virtual void DisposeBindedObject() => (BindedObject as IDisposable)?.Dispose();
