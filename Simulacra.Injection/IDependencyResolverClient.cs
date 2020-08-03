@@ -4,6 +4,6 @@ namespace Simulacra.Injection
 {
     public interface IDependencyResolverClient
     {
-        IDependencyResolver DependencyResolver { set; }
+        IDependencyResolver DependencyResolver { get; set; }
     }
 }

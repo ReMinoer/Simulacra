@@ -30,11 +30,15 @@ namespace Simulacra.Injection.Base
         }
 
         private IDependencyResolver _dependencyResolver;
-
-        public virtual IDependencyResolver DependencyResolver
+        protected virtual IDependencyResolver DependencyResolver
         {
-            protected get => _dependencyResolver;
+            get => _dependencyResolver;
             set => Set(ref _dependencyResolver, value);
+        }
+        IDependencyResolver IDependencyResolverClient.DependencyResolver
+        {
+            get => DependencyResolver;
+            set => DependencyResolver = value;
         }
 
         IEnumerable<TSubConfigurator> ICompositeConfigurator<T, TSubConfigurator>.SubConfigurators => SubConfiguratorsBase;
