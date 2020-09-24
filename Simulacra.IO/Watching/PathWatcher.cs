@@ -12,7 +12,7 @@ namespace Simulacra.IO.Watching
         private readonly IFileSystemWatcherProvider _watcherProvider;
         private readonly object _lock = new object();
 
-        private readonly Dictionary<Delegate, PathHandlersBase> _handlers = new Dictionary<Delegate, PathHandlersBase>();
+        private readonly Dictionary<(string, Delegate), PathHandlersBase> _handlers = new Dictionary<(string, Delegate), PathHandlersBase>();
         private readonly Dictionary<string, SharedWatcher> _sharedWatchers = new Dictionary<string, SharedWatcher>();
 
         public ILogger Logger { get; set; }
@@ -39,7 +39,7 @@ namespace Simulacra.IO.Watching
                 throw new ArgumentException();
 
             lock (_lock)
-                _handlers.Add(handler, new FileHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
+                _handlers.Add((uniquePath, handler), new FileHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
 
             Logger?.LogInformation($"Start watching file: {uniquePath}");
         }
@@ -55,19 +55,21 @@ namespace Simulacra.IO.Watching
                 throw new ArgumentException();
 
             lock (_lock)
-                _handlers.Add(handler, new FolderHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
+                _handlers.Add((uniquePath, handler), new FolderHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
 
             Logger?.LogInformation($"Start watching folder: {uniquePath}");
         }
 
-        public void Unwatch(FileChangedEventHandler fileHandler) => Unwatch(handler: fileHandler);
-        public void Unwatch(FolderChangedEventHandler folderHandler) => Unwatch(handler: folderHandler);
-        private void Unwatch(Delegate handler)
+        public void Unwatch(string path, FileChangedEventHandler fileHandler) => Unwatch(_fileSystem.UniqueFile(path), handler: fileHandler);
+        public void Unwatch(string path, FolderChangedEventHandler folderHandler) => Unwatch(_fileSystem.UniqueFolder(path), handler: folderHandler);
+        private void Unwatch(string uniquePath, Delegate handler)
         {
             lock (_lock)
             {
-                PathHandlersBase pathHandlers = _handlers[handler];
-                _handlers.Remove(handler);
+                (string, Delegate) key = (uniquePath, handler);
+
+                PathHandlersBase pathHandlers = _handlers[key];
+                _handlers.Remove(key);
                 Logger?.LogDebug($"Stop watching file: {pathHandlers.UniquePath}");
 
                 pathHandlers.Release();

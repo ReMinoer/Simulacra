@@ -65,7 +65,7 @@ namespace Simulacra.IO.Binding
         protected override void Unsubscribe(string path, FileChangedEventHandler handler)
         {
             if (PathUtils.IsValidAbsolutePath(path))
-                PathBindingModule.Watcher.Unwatch(handler);
+                PathBindingModule.Watcher.Unwatch(path, handler);
         }
 
         protected override FileChangedEventHandler GetHandler(IOneWaySubscriptionBinding<TModel, TView, string> binding)

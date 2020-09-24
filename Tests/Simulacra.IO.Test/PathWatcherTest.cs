@@ -139,14 +139,14 @@ namespace Simulacra.IO.Test
             => TestBase(
                 prepareSystem, mockAction, expectedChanges, GetFileHandler,
                 (watcher, path, handler) => watcher.WatchFile(path, handler),
-                (watcher, handler) => watcher.Unwatch(handler)
+                (watcher, path, handler) => watcher.Unwatch(path, handler)
             );
 
         private void TestFolder(Action<MockWatchableFileSystem> prepareSystem, Action<MockWatchableFileSystem> mockAction, params (string, string, string, FolderChangeType[])[] expectedChanges)
             => TestBase(
                 prepareSystem, mockAction, expectedChanges, GetFolderHandler,
                 (watcher, path, handler) => watcher.WatchFolder(path, handler),
-                (watcher, handler) => watcher.Unwatch(handler)
+                (watcher, path, handler) => watcher.Unwatch(path, handler)
             );
 
         private void TestBase<TChangeType, THandler>(
@@ -155,7 +155,7 @@ namespace Simulacra.IO.Test
             (string, string, string, TChangeType[])[] expectedChanges,
             Func<PathWatcher, string, TChangeType[], string, string, Action, THandler> getHandlerFunc,
             Action<PathWatcher, string, THandler> watchAction,
-            Action<PathWatcher, THandler> unwatchAction)
+            Action<PathWatcher, string, THandler> unwatchAction)
         {
             var mockSystem = new MockWatchableFileSystem();
 
@@ -190,8 +190,8 @@ namespace Simulacra.IO.Test
                 for (int i = 0; i < handled.Length; i++)
                     handled[i] = false;
 
-                foreach ((string _, THandler handler) in handlers)
-                    unwatchAction(watcher, handler);
+                foreach ((string path, THandler handler) in handlers)
+                    unwatchAction(watcher, path, handler);
                 {
                     handled.Should().AllBeEquivalentTo(false);
                 }
