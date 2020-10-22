@@ -19,7 +19,7 @@ namespace Simulacra.Binding
             Func<TModel, INotifyArrayChanged> eventSourceGetter = Expression.Lambda<Func<TModel, INotifyArrayChanged>>(eventSourceGetterExpression, modelPropertyGetterExpression.Parameters).Compile();
             Func<TModel, IArray<TModelItem>> referenceGetter = modelPropertyGetterExpression.Compile();
             
-            return new ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem>(arrayBindingsProvider.ArrayBindings, propertyName, eventSourceGetter, referenceGetter, (m, x, v) => x);
+            return new ArrayBindingBuilder<TModel, TView, TModelItem, TModelItem>(arrayBindingsProvider.ArrayBindings, propertyName, eventSourceGetter, referenceGetter, (m, x, v, y) => x);
         }
     }
 
@@ -43,7 +43,7 @@ namespace Simulacra.Binding
 
         static public ArrayBindingBuilder<TModel, TView, TModelItem, TNewViewItem> SelectItems<TModel, TView, TModelItem, TOldViewItem, TNewViewItem>(
             this IArrayBindingBuilder<TModel, TView, TModelItem, TOldViewItem> builder,
-            Func<TModel, TModelItem, TView, TNewViewItem> itemConverter,
+            Func<TModel, TModelItem, TView, TNewViewItem, TNewViewItem> itemConverter,
             Action<TNewViewItem> viewItemDisposer = null)
         {
             var newBuilder = new ArrayBindingBuilder<TModel, TView, TModelItem, TNewViewItem>(builder);
@@ -67,7 +67,7 @@ namespace Simulacra.Binding
     public interface IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem> : IArrayBindingBuilder<TModel, TView>
     {
         Func<TModel, IArray<TModelItem>> ReferenceGetter { get; set; }
-        Func<TModel, TModelItem, TView, TViewItem> ItemConverter { get; set; }
+        Func<TModel, TModelItem, TView, TViewItem, TViewItem> ItemConverter { get; set; }
         Action<TViewItem> ViewItemDisposer { get; set; }
 
         void To<TViewArray>(Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator)
@@ -81,7 +81,7 @@ namespace Simulacra.Binding
         private Func<TModel, INotifyArrayChanged> _subscriptionGetter;
 
         private Func<TModel, IArray<TModelItem>> _referenceGetter;
-        private Func<TModel, TModelItem, TView, TViewItem> _itemConverter;
+        private Func<TModel, TModelItem, TView, TViewItem, TViewItem> _itemConverter;
         private Action<TViewItem> _viewItemDisposer;
 
         public ArrayBindingBuilder(
@@ -89,7 +89,7 @@ namespace Simulacra.Binding
             string referencePropertyName,
             Func<TModel, INotifyArrayChanged> subscriptionGetter,
             Func<TModel, IArray<TModelItem>> referenceGetter,
-            Func<TModel, TModelItem, TView, TViewItem> itemConverter
+            Func<TModel, TModelItem, TView, TViewItem, TViewItem> itemConverter
         )
         {
             _bindingCollection = bindingCollection;
@@ -138,7 +138,7 @@ namespace Simulacra.Binding
             get => _referenceGetter;
             set => _referenceGetter = value;
         }
-        Func<TModel, TModelItem, TView, TViewItem> IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem>.ItemConverter
+        Func<TModel, TModelItem, TView, TViewItem, TViewItem> IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem>.ItemConverter
         {
             get => _itemConverter;
             set => _itemConverter = value;

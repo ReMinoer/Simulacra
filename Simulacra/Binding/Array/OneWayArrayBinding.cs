@@ -11,10 +11,10 @@ namespace Simulacra.Binding.Array
         private readonly Func<TView, IWriteableArray<TViewItem>> _arrayGetter;
         private readonly Action<TView, TViewArray> _arraySetter;
         private readonly Func<int[], TViewArray> _arrayCreator;
-        private readonly Func<TModel, TModelItem, TView, TViewItem> _itemConverter;
+        private readonly Func<TModel, TModelItem, TView, TViewItem, TViewItem> _itemConverter;
         private readonly Action<TViewItem> _viewItemDisposer;
 
-        public OneWayArrayBinding(Func<TModel, IArray<TModelItem>> referenceGetter, Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator, Func<TModel, TModelItem, TView, TViewItem> itemConverter, Action<TViewItem> viewItemDisposer = null)
+        public OneWayArrayBinding(Func<TModel, IArray<TModelItem>> referenceGetter, Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator, Func<TModel, TModelItem, TView, TViewItem, TViewItem> itemConverter, Action<TViewItem> viewItemDisposer = null)
         {
             _referenceGetter = referenceGetter;
             _arrayGetter = arrayGetter;
@@ -68,8 +68,10 @@ namespace Simulacra.Binding.Array
 
         private void SetCellValue(TModel model, TView view, IWriteableArray<TViewItem> array, int[] indexes, TModelItem modelItem)
         {
-            _viewItemDisposer?.Invoke(array[indexes]);
-            array[indexes] = _itemConverter(model, modelItem, view);
+            TViewItem currentViewItem = array[indexes];
+
+            _viewItemDisposer?.Invoke(currentViewItem);
+            array[indexes] = _itemConverter(model, modelItem, view, currentViewItem);
         }
     }
 }
