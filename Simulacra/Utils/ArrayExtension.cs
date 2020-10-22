@@ -105,5 +105,19 @@ namespace Simulacra.Utils
         {
             return new RetypedWriteableArray<TOldValue, TNewValue>(array, getter, setter);
         }
+
+        static public void Fill<T>(this IWriteableArray<T> array, T value)
+        {
+            int[] indexes = array.GetResetIndex();
+            while (array.MoveIndex(indexes))
+                array[indexes] = value;
+        }
+
+        static public void Fill<T>(this IWriteableArray<T> array, Func<int[], T> valueFactory)
+        {
+            int[] indexes = array.GetResetIndex();
+            while (array.MoveIndex(indexes))
+                array[indexes] = valueFactory(indexes);
+        }
     }
 }
