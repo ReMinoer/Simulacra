@@ -2,10 +2,14 @@
 
 namespace Simulacra.Utils
 {
-    public interface IArray
+    public interface IArrayDefinition
     {
         int Rank { get; }
         int GetLength(int dimension);
+    }
+
+    public interface IArray : IArrayDefinition
+    {
         object this[params int[] indexes] { get; }
     }
 

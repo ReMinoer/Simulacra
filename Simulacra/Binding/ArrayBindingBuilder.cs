@@ -25,20 +25,22 @@ namespace Simulacra.Binding
 
     static public class ArrayBindingBuilderExtension
     {
-        static public void To<TModel, TView, TModelItem, TViewItem, TViewArray>(
+        static public void To<TModel, TView, TModelItem, TViewItem, TViewArray, TCreatedArray>(
             this IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem> binding,
-            Expression<Func<TView, IWriteableArray<TViewItem>>> arrayGetterExpression,
-            Func<int[], TViewArray> arrayCreator)
+            Expression<Func<TView, TViewArray>> arrayGetterExpression,
+            Action<TViewArray, int[]> arrayResizer = null,
+            Func<int[], TCreatedArray> arrayCreator = null)
             where TViewArray : IWriteableArray<TViewItem>
+            where TCreatedArray : TViewArray
         {
-            Func<TView, IWriteableArray<TViewItem>> arrayGetter = arrayGetterExpression.Compile();
+            Func<TView, TViewArray> arrayGetter = arrayGetterExpression.Compile();
 
             var arrayMemberExpression = (MemberExpression)arrayGetterExpression.Body;
             ParameterExpression setterValueParameter = Expression.Parameter(typeof(TViewArray));
             Expression setterBodyExpression = Expression.Assign(arrayMemberExpression, setterValueParameter);
             Action<TView, TViewArray> arraySetter = Expression.Lambda<Action<TView, TViewArray>>(setterBodyExpression, arrayGetterExpression.Parameters[0], setterValueParameter).Compile();
 
-            binding.To(arrayGetter, arraySetter, arrayCreator);
+            binding.To(arrayGetter, arraySetter, arrayResizer, arrayCreator);
         }
 
         static public ArrayBindingBuilder<TModel, TView, TModelItem, TNewViewItem> SelectItems<TModel, TView, TModelItem, TOldViewItem, TNewViewItem>(
@@ -70,8 +72,9 @@ namespace Simulacra.Binding
         Func<TModel, TModelItem, TView, TViewItem, TViewItem> ItemConverter { get; set; }
         Action<TViewItem> ViewItemDisposer { get; set; }
 
-        void To<TViewArray>(Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator)
-            where TViewArray : IWriteableArray<TViewItem>;
+        void To<TViewArray, TCreatedArray>(Func<TView, TViewArray> arrayGetter, Action<TView, TViewArray> arraySetter, Action<TViewArray, int[]> arrayResizer, Func<int[], TCreatedArray> arrayCreator)
+            where TViewArray : IWriteableArray<TViewItem>
+            where TCreatedArray : TViewArray;
     }
 
     public class ArrayBindingBuilder<TModel, TView, TModelItem, TViewItem> : IArrayBindingBuilder<TModel, TView, TModelItem, TViewItem>
@@ -106,14 +109,16 @@ namespace Simulacra.Binding
             _subscriptionGetter = builder.SubscriptionGetter;
         }
 
-        public void To<TViewArray>(Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator)
+        public void To<TViewArray, TCreatedArray>(Func<TView, TViewArray> arrayGetter, Action<TView, TViewArray> arraySetter, Action<TViewArray, int[]> arrayResizer, Func<int[], TCreatedArray> arrayCreator)
             where TViewArray : IWriteableArray<TViewItem>
+            where TCreatedArray : TViewArray
         {
             _bindingCollection.Add(_referencePropertyName,
-                new OneWayArrayBinding<TModel, TView, TModelItem, TViewItem, TViewArray>(
+                new OneWayArrayBinding<TModel, TView, TModelItem, TViewItem, TViewArray, TCreatedArray>(
                     _referenceGetter,
                     arrayGetter,
                     arraySetter,
+                    arrayResizer,
                     arrayCreator,
                     _itemConverter,
                     _viewItemDisposer

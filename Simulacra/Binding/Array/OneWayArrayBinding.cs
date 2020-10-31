@@ -4,20 +4,23 @@ using Simulacra.Utils;
 
 namespace Simulacra.Binding.Array
 {
-    public class OneWayArrayBinding<TModel, TView, TModelItem, TViewItem, TViewArray> : IOneWayBinding<TModel, TView, ArrayChangedEventArgs>
+    public class OneWayArrayBinding<TModel, TView, TModelItem, TViewItem, TViewArray, TCreatedArray> : IOneWayBinding<TModel, TView, ArrayChangedEventArgs>
         where TViewArray : IWriteableArray<TViewItem>
+        where TCreatedArray : TViewArray
     {
         private readonly Func<TModel, IArray<TModelItem>> _referenceGetter;
-        private readonly Func<TView, IWriteableArray<TViewItem>> _arrayGetter;
+        private readonly Func<TView, TViewArray> _arrayGetter;
         private readonly Action<TView, TViewArray> _arraySetter;
-        private readonly Func<int[], TViewArray> _arrayCreator;
+        private readonly Action<TViewArray, int[]> _arrayResizer;
+        private readonly Func<int[], TCreatedArray> _arrayCreator;
         private readonly Func<TModel, TModelItem, TView, TViewItem, TViewItem> _itemConverter;
         private readonly Action<TViewItem> _viewItemDisposer;
 
-        public OneWayArrayBinding(Func<TModel, IArray<TModelItem>> referenceGetter, Func<TView, IWriteableArray<TViewItem>> arrayGetter, Action<TView, TViewArray> arraySetter, Func<int[], TViewArray> arrayCreator, Func<TModel, TModelItem, TView, TViewItem, TViewItem> itemConverter, Action<TViewItem> viewItemDisposer = null)
+        public OneWayArrayBinding(Func<TModel, IArray<TModelItem>> referenceGetter, Func<TView, TViewArray> arrayGetter, Action<TView, TViewArray> arraySetter, Action<TViewArray, int[]> arrayResizer, Func<int[], TCreatedArray> arrayCreator, Func<TModel, TModelItem, TView, TViewItem, TViewItem> itemConverter, Action<TViewItem> viewItemDisposer = null)
         {
             _referenceGetter = referenceGetter;
             _arrayGetter = arrayGetter;
+            _arrayResizer = arrayResizer;
             _arrayCreator = arrayCreator;
             _arraySetter = arraySetter;
             _itemConverter = itemConverter;
@@ -26,52 +29,110 @@ namespace Simulacra.Binding.Array
 
         public void SetView(TModel model, TView view)
         {
-            IArray<TModelItem> referenceArray = _referenceGetter(model);
-            IWriteableArray<TViewItem> array = _arrayGetter(view);
+            IArray<TModelItem> modelArray = _referenceGetter(model);
+            TViewArray viewArray = _arrayGetter(view);
 
-            if (array != null && referenceArray.Lengths().SequenceEqual(array.Lengths()))
+            int[] newLengths = modelArray.Lengths();
+
+            if (viewArray != null && viewArray.Lengths().SequenceEqual(newLengths))
             {
-                int[] indexes = referenceArray.GetResetIndex();
-                while (referenceArray.MoveIndex(indexes))
-                    SetCellValue(model, view, array, indexes, referenceArray[indexes]);
+                SetViewCells(model, view, viewArray);
+            }
+            else if (viewArray != null && _arrayResizer != null)
+            {
+                _arrayResizer.Invoke(viewArray, newLengths);
+                SetViewCells(model, view, viewArray);
             }
             else
             {
-                TViewArray newArray = _arrayCreator(referenceArray.Lengths().ToArray());
-
-                int[] indexes = referenceArray.GetResetIndex();
-                while (referenceArray.MoveIndex(indexes))
-                    SetCellValue(model, view, newArray, indexes, referenceArray[indexes]);
-
-                _arraySetter(view, newArray);
+                viewArray = _arrayCreator(newLengths);
+                SetViewCells(model, view, viewArray);
+                _arraySetter(view, viewArray);
             }
         }
 
         public void UpdateView(TModel model, TView view, ArrayChangedEventArgs e)
         {
-            IWriteableArray<TViewItem> array = _arrayGetter(view);
-            int[] arrayIndexes = e.StartingIndexes.ToArray();
-
-            System.Array values = e.NewValues;
-            var valueIndexes = e.NewValues.GetInitialIndex();
-            
-            while (true)
+            switch (e.Action)
             {
-                SetCellValue(model, view, array, arrayIndexes, (TModelItem)values.GetValue(valueIndexes));
-
-                if (!values.MoveIndex(valueIndexes))
-                    break;
-                if (!array.MoveIndex(arrayIndexes))
-                    throw new InvalidOperationException();
+                case ArrayChangedAction.Replace:
+                {
+                    SetViewCells(model, view, e.NewRange, e.NewValues);
+                    return;
+                }
+                case ArrayChangedAction.Resize:
+                {
+                    ResizeViewArray(model, view, e.NewLengths);
+                    return;
+                }
+                case ArrayChangedAction.Add:
+                {
+                    throw new NotImplementedException();
+                }
+                case ArrayChangedAction.Remove:
+                {
+                    throw new NotImplementedException();
+                }
+                case ArrayChangedAction.Move:
+                {
+                    throw new NotImplementedException();
+                }
             }
         }
 
-        private void SetCellValue(TModel model, TView view, IWriteableArray<TViewItem> array, int[] indexes, TModelItem modelItem)
+        private void ResizeViewArray(TModel model, TView view, int[] newLengths)
         {
-            TViewItem currentViewItem = array[indexes];
+            TViewArray viewArray = _arrayGetter(view);
+            if (viewArray.Lengths().SequenceEqual(newLengths))
+                return;
 
-            _viewItemDisposer?.Invoke(currentViewItem);
-            array[indexes] = _itemConverter(model, modelItem, view, currentViewItem);
+            if (_arrayResizer != null)
+            {
+                _arrayResizer.Invoke(viewArray, newLengths);
+            }
+            else
+            {
+                TViewArray newArray = _arrayCreator(newLengths);
+                SetViewCells(model, view, newArray);
+                _arraySetter(view, newArray);
+            }
+        }
+
+        private void SetViewCells(TModel model, TView view, TViewArray viewArray)
+        {
+            IArray<TModelItem> modelArray = _referenceGetter(model);
+
+            int[] indexes = modelArray.GetResetIndex();
+            while (modelArray.MoveIndex(indexes))
+                SetViewCell(model, view, viewArray, indexes, modelArray[indexes]);
+        }
+
+        private void SetViewCells(TModel model, TView view, ArrayRange arrayRange, System.Array newValues)
+        {
+            IWriteableArray<TViewItem> array = _arrayGetter(view);
+
+            int[] arrayIndexes = arrayRange.GetResetIndex();
+            int[] newValueIndexes = newValues.GetResetIndex();
+
+            while (newValues.MoveIndex(newValueIndexes))
+            {
+                if (!arrayRange.MoveIndex(arrayIndexes))
+                    throw new InvalidOperationException();
+
+                var newModelItem = (TModelItem)newValues.GetValue(newValueIndexes);
+                SetViewCell(model, view, array, arrayIndexes, newModelItem);
+            }
+
+            if (arrayRange.MoveIndex(arrayIndexes))
+                throw new InvalidOperationException();
+        }
+
+        private void SetViewCell(TModel model, TView view, IWriteableArray<TViewItem> array, int[] arrayIndexes, TModelItem newModelItem)
+        {
+            TViewItem oldViewItem = array[arrayIndexes];
+            _viewItemDisposer?.Invoke(oldViewItem);
+
+            array[arrayIndexes] = _itemConverter(model, newModelItem, view, oldViewItem);
         }
     }
 }
