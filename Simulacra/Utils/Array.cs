@@ -56,7 +56,7 @@ namespace Simulacra.Utils
         }
 
         public OneDimensionArray(int length0, int[] capacity = null)
-            : this(new T[capacity[0]], new[] { length0 })
+            : this(capacity != null ? new T[capacity[0]] : new T[length0], new[] { length0 })
         {
         }
 
@@ -125,7 +125,7 @@ namespace Simulacra.Utils
         }
 
         public TwoDimensionArray(int length0, int length1, int[] capacity = null)
-            : this(new T[capacity[0], capacity[1]], new[] { length0, length1 })
+            : this(capacity != null ? new T[capacity[0], capacity[1]] : new T[length0, length1], new[] { length0, length1 })
         {
         }
 
@@ -167,7 +167,7 @@ namespace Simulacra.Utils
         }
 
         public ThreeDimensionArray(int length0, int length1, int length2, int[] capacity = null)
-            : this(new T[capacity[0], capacity[1], capacity[2]], new[] { length0, length1, length2 })
+            : this(capacity != null ? new T[capacity[0], capacity[1], capacity[2]] : new T[length0, length1, length2], new[] { length0, length1, length2 })
         {
         }
 
@@ -209,7 +209,7 @@ namespace Simulacra.Utils
         }
 
         public FourDimensionArray(int length0, int length1, int length2, int length3, int[] capacity = null)
-            : this(new T[capacity[0], capacity[1], capacity[2], capacity[3]], new []{ length0, length1, length2, length3 })
+            : this(capacity != null ? new T[capacity[0], capacity[1], capacity[2], capacity[3]] : new T[length0, length1, length2, length3], new []{ length0, length1, length2, length3 })
         {
         }
 
