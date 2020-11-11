@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -297,6 +298,133 @@ namespace Simulacra.Utils
             newArray.Fill(defaultValueFactory, fillIndexes);
 
             return newArray;
+        }
+
+        static public TwoDimensionIndexSequenceCollection ToSequences<T>(this IEnumerable<int[]> indexes, IArrayDefinition array)
+        {
+            var sequences = new List<TwoDimensionIndexSequence>();
+            int sequenceI = 0;
+            int sequenceJ = 0;
+            int length = 0;
+
+            int[] predictedIndex = null;
+            foreach (int[] index in indexes)
+            {
+                if (predictedIndex != null && !predictedIndex.Equals(index))
+                {
+                    sequences.Add(new TwoDimensionIndexSequence(sequenceI, sequenceJ, length));
+                    length = 0;
+                }
+
+                if (length == 0)
+                {
+                    sequenceI = index[0];
+                    sequenceJ = index[1];
+                }
+
+                length++;
+
+                if (predictedIndex == null)
+                    predictedIndex = new int[2];
+
+                Array.Copy(index, predictedIndex, index.Length);
+                array.MoveIndex(predictedIndex, 0);
+            }
+
+            return new TwoDimensionIndexSequenceCollection(sequences);
+        }
+    }
+
+    public class TwoDimensionIndexSequenceCollection : IEnumerable<int[]>
+    {
+        private readonly IList<TwoDimensionIndexSequence> _sequences;
+        public bool IsEmpty => _sequences.Count == 0;
+
+        public TwoDimensionIndexSequenceCollection(IList<TwoDimensionIndexSequence> orderedSequences)
+        {
+            _sequences = orderedSequences;
+        }
+
+        public IEnumerator<int[]> GetEnumerator() => new Enumerator(_sequences);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private class Enumerator : IEnumerator<int[]>
+        {
+            private readonly IList<TwoDimensionIndexSequence> _sequencesArray;
+
+            public int[] Current { get; }
+            object IEnumerator.Current => Current;
+
+            private int _arrayIndex;
+            private int _sequenceIndex;
+
+            public Enumerator(IList<TwoDimensionIndexSequence> sequencesArray)
+            {
+                _sequencesArray = sequencesArray;
+                Current = new int[2];
+                Reset();
+            }
+
+            public void Reset()
+            {
+                _arrayIndex = 0;
+                _sequenceIndex = -1;
+
+                if (_sequencesArray.Count == 0)
+                {
+                    Current[0] = 0;
+                    Current[1] = -1;
+                    return;
+                }
+
+                Current[0] = _sequencesArray[0].I;
+                Current[1] = _sequencesArray[0].J - 1;
+            }
+
+            public bool MoveNext()
+            {
+                if (_sequencesArray.Count == 0)
+                    return false;
+
+                _sequenceIndex++;
+                if (_sequenceIndex >= _sequencesArray[_arrayIndex].Length)
+                {
+                    _sequenceIndex = 0;
+                    _arrayIndex++;
+                    if (_arrayIndex >= _sequencesArray.Count)
+                        return false;
+                }
+
+                TwoDimensionIndexSequence sequence = _sequencesArray[_arrayIndex];
+                Current[0] = sequence.I;
+                Current[1] = sequence.J + _sequenceIndex;
+                return true;
+            }
+
+            public void Dispose() { }
+        }
+    }
+
+    public struct TwoDimensionIndexSequence : IComparable<TwoDimensionIndexSequence>
+    {
+        public int I { get; }
+        public int J { get; }
+        public int Length { get; }
+
+        public TwoDimensionIndexSequence(int i, int j, int length)
+        {
+            I = i;
+            J = j;
+            Length = length;
+        }
+
+        public int CompareTo(TwoDimensionIndexSequence other)
+        {
+            int result = I.CompareTo(other.I);
+            if (result != 0)
+                return result;
+
+            return J.CompareTo(other.J);
         }
     }
 }
