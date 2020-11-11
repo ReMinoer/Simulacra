@@ -428,9 +428,6 @@ namespace Simulacra.Utils
         bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) => ((IStructuralEquatable)Data).Equals(other, comparer);
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) => ((IStructuralEquatable)Data).GetHashCode(comparer);
 
-        private IEnumerable<int[]> _indexes;
-        public IEnumerable<int[]> Indexes => _indexes ?? (_indexes = ArrayUtils.CreateIndexEnumerable(this));
-
         public IEnumerator<T> GetEnumerator() => new Enumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
