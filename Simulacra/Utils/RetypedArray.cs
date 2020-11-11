@@ -21,8 +21,10 @@ namespace Simulacra.Utils
         public TNewValue this[params int[] indexes] => Getter(Array[indexes]);
         object IArray.this[params int[] indexes] => this[indexes];
 
+        public int[] GetResetIndex() => ArrayUtils.GetResetIndex(this);
+        public bool MoveIndex(int[] indexes) => ArrayUtils.MoveIndex(this, indexes);
+
         public IEnumerator<TNewValue> GetEnumerator() => Array.Select(Getter).GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
     }
 }

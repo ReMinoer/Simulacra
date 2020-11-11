@@ -31,166 +31,41 @@ namespace Simulacra.Utils
             return lengths;
         }
 
-        static public ArrayRange FullRange(this Array array)
+        static public IndexRange IndexRange(this Array array)
         {
-            return new ArrayRange(array.GetInitialIndex(), array.Lengths());
+            return new IndexRange(new int[array.Rank], array.Lengths());
         }
 
-        static public ArrayRange FullRange(this IArrayDefinition array)
+        static public IndexRange IndexRange(this IArrayDefinition array)
         {
-            return new ArrayRange(array.GetInitialIndex(), array.Lengths());
+            return new IndexRange(new int[array.Rank], array.Lengths());
         }
 
-        static public int[] GetInitialIndex(this Array array, IArrayMask[] excludingMasks = null)
+        static public int[] GetInitialIndex(this IIndexEnumerator indexEnumerator)
         {
-            int[] indexes = new int[array.Rank];
-            if (excludingMasks == null)
-                return indexes;
-
-            do
-            {
-                if (!excludingMasks.ContainsIndexes(indexes))
-                    return indexes;
-            }
-            while (array.MoveIndex(indexes));
-
-            return null;
-        }
-
-        static public int[] GetInitialIndex(this IArrayDefinition array, IArrayMask[] excludingMasks = null)
-        {
-            int[] indexes = new int[array.Rank];
-            if (excludingMasks == null)
-                return indexes;
-
-            do
-            {
-                if (!excludingMasks.ContainsIndexes(indexes))
-                    return indexes;
-            }
-            while (array.MoveIndex(indexes));
-
-            return null;
-        }
-
-        static public int[] GetInitialIndex(this ArrayRange arrayRange, IArrayMask[] excludingMasks = null)
-        {
-            int[] indexes = arrayRange.StartingIndexes.ToArray();
-            if (excludingMasks == null)
-                return indexes;
-
-            do
-            {
-                if (!excludingMasks.ContainsIndexes(indexes))
-                    return indexes;
-            }
-            while (arrayRange.MoveIndex(indexes));
-
-            return null;
-        }
-
-        static public int[] GetResetIndex(this Array array, IArrayMask[] excludingMasks = null)
-        {
-            int[] indexes = array.GetInitialIndex(excludingMasks);
-            if (indexes == null)
-                return null;
-
-            indexes[array.Rank - 1]--;
+            int[] indexes = indexEnumerator.GetResetIndex();
+            indexEnumerator.MoveIndex(indexes);
             return indexes;
         }
 
-        static public int[] GetResetIndex(this IArrayDefinition array, IArrayMask[] excludingMasks = null)
+        static public int[] GetInitialIndex(this IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks)
         {
-            int[] indexes = array.GetInitialIndex(excludingMasks);
-            if (indexes == null)
-                return null;
+            int[] indexes = indexEnumerator.GetResetIndex();
+            while (indexEnumerator.MoveIndex(indexes))
+            {
+                if (!excludingMasks.ContainsIndexes(indexes))
+                    break;
+            }
 
-            indexes[array.Rank - 1]--;
             return indexes;
         }
 
-        static public int[] GetResetIndex(this ArrayRange arrayRange, IArrayMask[] excludingMasks = null)
+        static public bool MoveIndex(this IIndexEnumerator indexEnumerator, int[] indexes, IArrayMask[] excludingMasks = null)
         {
-            int[] indexes = arrayRange.GetInitialIndex(excludingMasks);
-            if (indexes == null)
-                return null;
-
-            indexes[arrayRange.Rank - 1]--;
-            return indexes;
-        }
-
-        static public bool MoveIndex(this Array array, int[] indexes, IArrayMask[] excludingMasks = null)
-        {
-            if (indexes == null)
-                return false;
-
             do
             {
-                indexes[array.Rank - 1]++;
-
-                for (int r = array.Rank - 1; r >= 0; r--)
-                {
-                    if (indexes[r] < array.GetLength(r))
-                        break;
-
-                    if (r - 1 < 0)
-                        return false;
-
-                    indexes[r] = 0;
-                    indexes[r - 1]++;
-                }
-            }
-            while (excludingMasks != null && excludingMasks.ContainsIndexes(indexes));
-
-            return true;
-        }
-
-        static public bool MoveIndex(this IArrayDefinition array, int[] indexes, IArrayMask[] excludingMasks = null)
-        {
-            if (indexes == null)
-                return false;
-
-            do
-            {
-                indexes[array.Rank - 1]++;
-
-                for (int r = array.Rank - 1; r >= 0; r--)
-                {
-                    if (indexes[r] < array.GetLength(r))
-                        break;
-
-                    if (r - 1 < 0)
-                        return false;
-
-                    indexes[r] = 0;
-                    indexes[r - 1]++;
-                }
-            }
-            while (excludingMasks != null && excludingMasks.ContainsIndexes(indexes));
-
-            return true;
-        }
-
-        static public bool MoveIndex(this ArrayRange arrayRange, int[] indexes, IArrayMask[] excludingMasks = null)
-        {
-            if (indexes == null)
-                return false;
-
-            do
-            {
-                indexes[arrayRange.Rank - 1]++;
-
-                for (int r = arrayRange.Rank - 1; r >= 0; r--)
-                {
-                    if (indexes[r] < arrayRange.StartingIndexes[r] + arrayRange.Lengths[r])
-                        break;
-
-                    if (r - 1 < 0)
-                        return false;
-
-                    indexes[r] = 0;
-                    indexes[r - 1]++;
-                }
+                if (!indexEnumerator.MoveIndex(indexes))
+                    return false;
             }
             while (excludingMasks != null && excludingMasks.ContainsIndexes(indexes));
 
@@ -234,39 +109,39 @@ namespace Simulacra.Utils
             return new RetypedWriteableArray<TOldValue, TNewValue>(array, getter, setter);
         }
 
-        static public void Fill<T>(this Array array, T value, ArrayRange? range = null, IArrayMask[] excludingMasks = null)
+        static public void Fill<T>(this Array array, T value, IIndexEnumerator indexEnumerator = null, IArrayMask[] excludingMasks = null)
         {
-            ArrayRange arrayRange = range ?? array.FullRange();
+            IIndexEnumerator enumerator = indexEnumerator ?? array.IndexRange();
 
-            int[] indexes = arrayRange.GetResetIndex(excludingMasks);
-            while (arrayRange.MoveIndex(indexes, excludingMasks))
+            int[] indexes = enumerator.GetResetIndex();
+            while (enumerator.MoveIndex(indexes, excludingMasks))
                 array.SetValue(value, indexes);
         }
 
-        static public void Fill<T>(this Array array, Func<T, int[], T> valueFactory, ArrayRange? range = null, IArrayMask[] excludingMasks = null)
+        static public void Fill<T>(this Array array, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator = null, IArrayMask[] excludingMasks = null)
         {
-            ArrayRange arrayRange = range ?? array.FullRange();
+            IIndexEnumerator enumerator = indexEnumerator ?? array.IndexRange();
 
-            int[] indexes = arrayRange.GetResetIndex(excludingMasks);
-            while (arrayRange.MoveIndex(indexes, excludingMasks))
+            int[] indexes = enumerator.GetResetIndex();
+            while (enumerator.MoveIndex(indexes, excludingMasks))
                 array.SetValue(valueFactory((T)array.GetValue(indexes), indexes), indexes);
         }
 
-        static public void Fill<T>(this IWriteableArray<T> array, T value, ArrayRange? range = null, IArrayMask[] excludingMasks = null)
+        static public void Fill<T>(this IWriteableArray<T> array, T value, IIndexEnumerator indexEnumerator = null, IArrayMask[] excludingMasks = null)
         {
-            ArrayRange arrayRange = range ?? array.FullRange();
+            IIndexEnumerator enumerator = indexEnumerator ?? array.IndexRange();
 
-            int[] indexes = arrayRange.GetResetIndex(excludingMasks);
-            while (arrayRange.MoveIndex(indexes, excludingMasks))
+            int[] indexes = enumerator.GetResetIndex();
+            while (enumerator.MoveIndex(indexes, excludingMasks))
                 array[indexes] = value;
         }
 
-        static public void Fill<T>(this IWriteableArray<T> array, Func<T, int[], T> valueFactory, ArrayRange? range = null, IArrayMask[] excludingMasks = null)
+        static public void Fill<T>(this IWriteableArray<T> array, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator = null, IArrayMask[] excludingMasks = null)
         {
-            ArrayRange arrayRange = range ?? array.FullRange();
+            IIndexEnumerator enumerator = indexEnumerator ?? array.IndexRange();
 
-            int[] indexes = arrayRange.GetResetIndex(excludingMasks);
-            while (arrayRange.MoveIndex(indexes, excludingMasks))
+            int[] indexes = enumerator.GetResetIndex();
+            while (enumerator.MoveIndex(indexes, excludingMasks))
                 array[indexes] = valueFactory(array[indexes], indexes);
         }
 
@@ -288,10 +163,10 @@ namespace Simulacra.Utils
                 for (int i = 0; i < copyRowsCount; ++i)
                     Array.Copy(array, i * arrayRowLength, newArray, i * newArrayRowLength, copyRowLength);
 
-                excludingMasks = new IArrayMask[] {new ArrayRange(copyLengths)};
+                excludingMasks = new IArrayMask[] {new IndexRange(copyLengths)};
             }
 
-            newArray.Fill(defaultValueFactory ?? ((_, __) => default), new ArrayRange(fillLengths), excludingMasks);
+            newArray.Fill(defaultValueFactory ?? ((_, __) => default), new IndexRange(fillLengths), excludingMasks);
 
             return newArray;
         }

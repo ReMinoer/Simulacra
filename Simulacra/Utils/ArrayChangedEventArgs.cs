@@ -27,8 +27,8 @@ namespace Simulacra.Utils
         public int[] NewLengths { get; private set; }
         public int[] OldLengths { get; private set; }
 
-        public ArrayRange NewRange { get; private set; }
-        public ArrayRange OldRange { get; private set; }
+        public IndexRange NewRange { get; private set; }
+        public IndexRange OldRange { get; private set; }
 
         private ArrayChangedEventArgs()
         {
@@ -40,8 +40,8 @@ namespace Simulacra.Utils
             StartingIndexes = startingIndexes,
             NewValues = newValues,
             OldValues = oldValues,
-            NewRange = new ArrayRange(startingIndexes, newValues.Lengths()),
-            OldRange = new ArrayRange(startingIndexes, oldValues.Lengths())
+            NewRange = new IndexRange(startingIndexes, newValues.Lengths()),
+            OldRange = new IndexRange(startingIndexes, oldValues.Lengths())
         };
 
         static public ArrayChangedEventArgs Resize(int[] newLengths, int[] oldLengths) => new ArrayChangedEventArgs
@@ -105,8 +105,8 @@ namespace Simulacra.Utils
             SliceDimension = sliceDimension,
             SliceCount = values.GetLength(sliceDimension),
             NewValues = values,
-            NewRange = new ArrayRange(GetStartingIndexes(arrayRank, sliceDimension, startingIndex), values.Lengths()),
-            OldRange = new ArrayRange(GetStartingIndexes(arrayRank, sliceDimension, oldStartingIndex), values.Lengths())
+            NewRange = new IndexRange(GetStartingIndexes(arrayRank, sliceDimension, startingIndex), values.Lengths()),
+            OldRange = new IndexRange(GetStartingIndexes(arrayRank, sliceDimension, oldStartingIndex), values.Lengths())
         };
 
         static private int[] GetStartingIndexes(int arrayRank, int sliceDimension, int startingIndex)
@@ -134,9 +134,9 @@ namespace Simulacra.Utils
             return rangeLengths;
         }
 
-        static private ArrayRange GetSliceRange(int[] oldLengths, int startingIndex, int sliceDimension, int sliceCount)
+        static private IndexRange GetSliceRange(int[] oldLengths, int startingIndex, int sliceDimension, int sliceCount)
         {
-            return new ArrayRange(GetStartingIndexes(oldLengths.Length, sliceDimension, startingIndex), GetRangeLengths(oldLengths, sliceDimension, sliceCount));
+            return new IndexRange(GetStartingIndexes(oldLengths.Length, sliceDimension, startingIndex), GetRangeLengths(oldLengths, sliceDimension, sliceCount));
         }
     }
 }

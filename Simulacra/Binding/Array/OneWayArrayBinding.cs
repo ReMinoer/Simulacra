@@ -11,12 +11,19 @@ namespace Simulacra.Binding.Array
         private readonly Func<TModel, IArray<TModelItem>> _referenceGetter;
         private readonly Func<TView, TViewArray> _arrayGetter;
         private readonly Action<TView, TViewArray> _arraySetter;
-        private readonly Action<TViewArray, int[]> _arrayResizer;
-        private readonly Func<int[], TCreatedArray> _arrayCreator;
+        private readonly Action<TModel, TView, TViewArray, int[]> _arrayResizer;
+        private readonly Func<TModel, TView, int[], TCreatedArray> _arrayCreator;
         private readonly Func<TModel, TModelItem, TView, TViewItem, TViewItem> _itemConverter;
         private readonly Action<TViewItem> _viewItemDisposer;
 
-        public OneWayArrayBinding(Func<TModel, IArray<TModelItem>> referenceGetter, Func<TView, TViewArray> arrayGetter, Action<TView, TViewArray> arraySetter, Action<TViewArray, int[]> arrayResizer, Func<int[], TCreatedArray> arrayCreator, Func<TModel, TModelItem, TView, TViewItem, TViewItem> itemConverter, Action<TViewItem> viewItemDisposer = null)
+        public OneWayArrayBinding(
+            Func<TModel, IArray<TModelItem>> referenceGetter,
+            Func<TView, TViewArray> arrayGetter,
+            Action<TView, TViewArray> arraySetter,
+            Action<TModel, TView, TViewArray, int[]> arrayResizer,
+            Func<TModel, TView, int[], TCreatedArray> arrayCreator,
+            Func<TModel, TModelItem, TView, TViewItem, TViewItem> itemConverter,
+            Action<TViewItem> viewItemDisposer = null)
         {
             _referenceGetter = referenceGetter;
             _arrayGetter = arrayGetter;
@@ -40,12 +47,12 @@ namespace Simulacra.Binding.Array
             }
             else if (viewArray != null && _arrayResizer != null)
             {
-                _arrayResizer.Invoke(viewArray, newLengths);
+                _arrayResizer.Invoke(model, view, viewArray, newLengths);
                 SetViewCells(model, view, viewArray);
             }
             else
             {
-                viewArray = _arrayCreator(newLengths);
+                viewArray = _arrayCreator(model, view, newLengths);
                 SetViewCells(model, view, viewArray);
                 _arraySetter(view, viewArray);
             }
@@ -88,11 +95,11 @@ namespace Simulacra.Binding.Array
 
             if (_arrayResizer != null)
             {
-                _arrayResizer.Invoke(viewArray, newLengths);
+                _arrayResizer.Invoke(model, view, viewArray, newLengths);
             }
             else
             {
-                TViewArray newArray = _arrayCreator(newLengths);
+                TViewArray newArray = _arrayCreator(model, view, newLengths);
                 SetViewCells(model, view, newArray);
                 _arraySetter(view, newArray);
             }
@@ -107,23 +114,24 @@ namespace Simulacra.Binding.Array
                 SetViewCell(model, view, viewArray, indexes, modelArray[indexes]);
         }
 
-        private void SetViewCells(TModel model, TView view, ArrayRange arrayRange, System.Array newValues)
+        private void SetViewCells(TModel model, TView view, IndexRange indexRange, System.Array newValues)
         {
             IWriteableArray<TViewItem> array = _arrayGetter(view);
 
-            int[] arrayIndexes = arrayRange.GetResetIndex();
-            int[] newValueIndexes = newValues.GetResetIndex();
+            int[] arrayIndexes = indexRange.GetResetIndex();
+            IndexRange newValuesRange = newValues.IndexRange();
+            int[] newValueIndexes = newValuesRange.GetResetIndex();
 
-            while (newValues.MoveIndex(newValueIndexes))
+            while (newValuesRange.MoveIndex(newValueIndexes))
             {
-                if (!arrayRange.MoveIndex(arrayIndexes))
+                if (!indexRange.MoveIndex(arrayIndexes))
                     throw new InvalidOperationException();
 
                 var newModelItem = (TModelItem)newValues.GetValue(newValueIndexes);
                 SetViewCell(model, view, array, arrayIndexes, newModelItem);
             }
 
-            if (arrayRange.MoveIndex(arrayIndexes))
+            if (indexRange.MoveIndex(arrayIndexes))
                 throw new InvalidOperationException();
         }
 

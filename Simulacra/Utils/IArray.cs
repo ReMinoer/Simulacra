@@ -2,7 +2,7 @@
 
 namespace Simulacra.Utils
 {
-    public interface IArrayDefinition
+    public interface IArrayDefinition : IIndexEnumerator
     {
         int Rank { get; }
         int GetLength(int dimension);
