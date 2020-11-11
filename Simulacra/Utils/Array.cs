@@ -40,9 +40,9 @@ namespace Simulacra.Utils
             return data.ToResizedArray(capacities, keepValues, valueFactory, lengths);
         }
 
-        protected override void FillData(Array data, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks)
+        protected override void FillData(Array data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable)
         {
-            data.Fill(valueFactory, indexEnumerator, excludingMasks);
+            data.Fill(valueFactory, indexEnumerable);
         }
     }
 
@@ -82,9 +82,9 @@ namespace Simulacra.Utils
             return (T[])data.ToResizedArray(capacities, keepValues, valueFactory, lengths);
         }
 
-        protected override void FillData(T[] data, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks)
+        protected override void FillData(T[] data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable)
         {
-            data.Fill(valueFactory, indexEnumerator, excludingMasks);
+            data.Fill(valueFactory, indexEnumerable);
         }
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;
@@ -105,7 +105,7 @@ namespace Simulacra.Utils
         void IList.Insert(int index, object value) => throw new NotSupportedException();
         void IList.Remove(object value) => throw new NotSupportedException();
         void IList.RemoveAt(int index) => throw new NotSupportedException();
-        void IList.Clear() => Array.Clear(Data, Data.GetLowerBound(0), GetLength(0));
+        void IList.Clear() => Array.Clear(Data, Data.GetLowerBound(0), Lengths[0]);
         bool IList.Contains(object value) => Array.IndexOf(Data, value) >= Data.GetLowerBound(0);
         int IList.IndexOf(object value) => Array.IndexOf(Data, value);
         object IList.this[int index]
@@ -151,9 +151,9 @@ namespace Simulacra.Utils
             return (T[,])data.ToResizedArray(capacities, keepValues, valueFactory, lengths);
         }
 
-        protected override void FillData(T[,] data, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks)
+        protected override void FillData(T[,] data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable)
         {
-            data.Fill(valueFactory, indexEnumerator, excludingMasks);
+            data.Fill(valueFactory, indexEnumerable);
         }
     }
 
@@ -193,9 +193,9 @@ namespace Simulacra.Utils
             return (T[,,])data.ToResizedArray(capacities, keepValues, valueFactory, lengths);
         }
 
-        protected override void FillData(T[,,] data, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks)
+        protected override void FillData(T[,,] data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable)
         {
-            data.Fill(valueFactory, indexEnumerator, excludingMasks);
+            data.Fill(valueFactory, indexEnumerable);
         }
     }
 
@@ -235,9 +235,9 @@ namespace Simulacra.Utils
             return (T[,,,])data.ToResizedArray(capacities, keepValues, valueFactory, lengths);
         }
 
-        protected override void FillData(T[,,,] data, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks)
+        protected override void FillData(T[,,,] data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable)
         {
-            data.Fill(valueFactory, indexEnumerator, excludingMasks);
+            data.Fill(valueFactory, indexEnumerable);
         }
     }
 
@@ -247,7 +247,8 @@ namespace Simulacra.Utils
         protected TData Data;
 
         public abstract int Rank { get; }
-        public int GetLength(int dimension) => _lengths[dimension];
+        int IArrayDefinition.GetLowerBound(int dimension) => 0;
+        int IArrayDefinition.GetLength(int dimension) => _lengths[dimension];
 
         private readonly int[] _lengths;
         public int[] Lengths
@@ -331,7 +332,10 @@ namespace Simulacra.Utils
             else
             {
                 Array.Copy(newLengths, _lengths, newLengths.Length);
-                FillData(Data, valueFactory ?? ((_, __) => default), new IndexRange(_lengths), new IArrayMask[] { new IndexRange(oldLengths) });
+
+                var newRange = new IndexRange(_lengths);
+                var oldRange = new IndexRange(oldLengths);
+                FillData(Data, valueFactory ?? ((_, __) => default), Enumerable.Where(newRange.Indexes(), x => !oldRange.ContainsIndex(x)));
             }
 
             NotifyPropertyChanged(nameof(Lengths));
@@ -365,7 +369,7 @@ namespace Simulacra.Utils
             for (int r = 0; r < Rank; r++)
             {
                 int index = indexesFunc(r);
-                if (index < 0 && index >= GetLength(r))
+                if (index < 0 && index >= _lengths[r])
                     throw new IndexOutOfRangeException();
             }
 
@@ -414,7 +418,7 @@ namespace Simulacra.Utils
         protected abstract void Set(TData data, int[] indexes, T value);
 
         protected abstract TData ResizeData(TData data, int[] capacities, int[] lengths, bool keepValues, Func<T, int[], T> valueFactory);
-        protected abstract void FillData(TData data, Func<T, int[], T> valueFactory, IIndexEnumerator indexEnumerator, IArrayMask[] excludingMasks);
+        protected abstract void FillData(TData data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable);
         protected abstract Array CreateValueArray(T value);
 
         T IArray<T>.this[params int[] indexes] => Get(Data, indexes);
@@ -424,8 +428,8 @@ namespace Simulacra.Utils
         bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) => ((IStructuralEquatable)Data).Equals(other, comparer);
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) => ((IStructuralEquatable)Data).GetHashCode(comparer);
 
-        public int[] GetResetIndex() => ArrayUtils.GetResetIndex(this);
-        public bool MoveIndex(int[] indexes) => ArrayUtils.MoveIndex(this, indexes);
+        private IEnumerable<int[]> _indexes;
+        public IEnumerable<int[]> Indexes => _indexes ?? (_indexes = ArrayUtils.CreateIndexEnumerable(this));
 
         public IEnumerator<T> GetEnumerator() => new Enumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

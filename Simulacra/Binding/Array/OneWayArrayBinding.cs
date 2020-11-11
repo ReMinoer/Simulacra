@@ -119,10 +119,9 @@ namespace Simulacra.Binding.Array
             IWriteableArray<TViewItem> array = _arrayGetter(view);
 
             int[] arrayIndexes = indexRange.GetResetIndex();
-            IndexRange newValuesRange = newValues.IndexRange();
-            int[] newValueIndexes = newValuesRange.GetResetIndex();
+            int[] newValueIndexes = newValues.GetResetIndex();
 
-            while (newValuesRange.MoveIndex(newValueIndexes))
+            while (newValues.MoveIndex(newValueIndexes))
             {
                 if (!indexRange.MoveIndex(arrayIndexes))
                     throw new InvalidOperationException();
