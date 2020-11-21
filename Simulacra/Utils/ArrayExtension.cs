@@ -76,6 +76,28 @@ namespace Simulacra.Utils
                 indexes[i] = array.GetLowerBound(i);
         }
 
+        static public void GetStartingIndex(this Array array, out int i)
+        {
+            i = array.GetLowerBound(0);
+        }
+
+        static public void GetStartingIndex(this Array array, out int i, out int j)
+        {
+            i = array.GetLowerBound(0);
+            j = array.GetLowerBound(1);
+        }
+
+        static public void GetStartingIndex(this IArrayDefinition array, out int i)
+        {
+            i = array.GetLowerBound(0);
+        }
+
+        static public void GetStartingIndex(this IArrayDefinition array, out int i, out int j)
+        {
+            i = array.GetLowerBound(0);
+            j = array.GetLowerBound(1);
+        }
+
         static public int[] GetEndingIndex(this Array array)
         {
             var indexes = new int[array.Rank];
@@ -104,30 +126,52 @@ namespace Simulacra.Utils
 
         static public int[] GetResetIndex(this Array array)
         {
-            var indexes = array.GetStartingIndex();
+            int[] indexes = array.GetStartingIndex();
             indexes[array.Rank - 1]--;
             return indexes;
         }
 
         static public int[] GetResetIndex(this IArrayDefinition array)
         {
-            var indexes = array.GetStartingIndex();
+            int[] indexes = array.GetStartingIndex();
             indexes[array.Rank - 1]--;
             return indexes;
         }
 
-        static public int[] GetResetIndex(this Array array, int[] indexes)
+        static public void GetResetIndex(this Array array, int[] indexes)
         {
             array.GetStartingIndex(indexes);
             indexes[array.Rank - 1]--;
-            return indexes;
         }
 
-        static public int[] GetResetIndex(this IArrayDefinition array, int[] indexes)
+        static public void GetResetIndex(this IArrayDefinition array, int[] indexes)
         {
             array.GetStartingIndex(indexes);
             indexes[array.Rank - 1]--;
-            return indexes;
+        }
+
+        static public void GetResetIndex(this Array array, out int i)
+        {
+            GetStartingIndex(array, out i);
+            i--;
+        }
+
+        static public void GetResetIndex(this Array array, out int i, out int j)
+        {
+            GetStartingIndex(array, out i, out j);
+            j--;
+        }
+
+        static public void GetResetIndex(this IArrayDefinition array, out int i)
+        {
+            GetStartingIndex(array, out i);
+            i--;
+        }
+
+        static public void GetResetIndex(this IArrayDefinition array, out int i, out int j)
+        {
+            GetStartingIndex(array, out i, out j);
+            j--;
         }
 
         static public bool MoveIndex(this Array array, int[] indexes)
@@ -142,7 +186,7 @@ namespace Simulacra.Utils
                 if (r - 1 < 0)
                     return false;
 
-                indexes[r] = 0;
+                indexes[r] = array.GetLowerBound(r);
                 indexes[r - 1]++;
             }
 
@@ -161,31 +205,75 @@ namespace Simulacra.Utils
                 if (r - 1 < 0)
                     return false;
 
-                indexes[r] = 0;
+                indexes[r] = array.GetLowerBound(r);
                 indexes[r - 1]++;
             }
 
             return true;
         }
 
-        static public bool MoveIndex(this Array array, int[] indexes, int dimension)
+        static public bool MoveIndex(this Array array, ref int i)
         {
-            indexes[dimension]++;
-            if (indexes[dimension] < array.GetOutOfBound(dimension))
+            i++;
+            return i < array.GetOutOfBound(0);
+        }
+
+        static public bool MoveIndex(this Array array, ref int i, ref int j)
+        {
+            j++;
+            if (j < array.GetOutOfBound(1))
                 return true;
 
-            indexes[dimension] = array.GetLowerBound(dimension);
+            j = 0;
+            i++;
+            return i < array.GetOutOfBound(0);
+        }
+
+        static public bool MoveIndex(this IArrayDefinition array, ref int i)
+        {
+            i++;
+            return i < array.GetOutOfBound(0);
+        }
+
+        static public bool MoveIndex(this IArrayDefinition array, ref int i, ref int j)
+        {
+            j++;
+            if (j < array.GetOutOfBound(1))
+                return true;
+
+            j = 0;
+            i++;
+            return i < array.GetOutOfBound(0);
+        }
+
+        static public bool MoveIndex(this Array array, ref int x, int dimension)
+        {
+            x++;
+            if (x < array.GetOutOfBound(dimension))
+                return true;
+
+            x = array.GetLowerBound(dimension);
             return false;
+        }
+
+        static public bool MoveIndex(this IArrayDefinition array, ref int x, int dimension)
+        {
+            x++;
+            if (x < array.GetOutOfBound(dimension))
+                return true;
+
+            x = array.GetLowerBound(dimension);
+            return false;
+        }
+
+        static public bool MoveIndex(this Array array, int[] indexes, int dimension)
+        {
+            return MoveIndex(array, ref indexes[dimension], dimension);
         }
 
         static public bool MoveIndex(this IArrayDefinition array, int[] indexes, int dimension)
         {
-            indexes[dimension]++;
-            if (indexes[dimension] < array.GetOutOfBound(dimension))
-                return true;
-
-            indexes[dimension] = array.GetLowerBound(dimension);
-            return false;
+            return MoveIndex(array, ref indexes[dimension], dimension);
         }
 
         static public bool ContainsIndex(this Array array, params int[] indexes)
