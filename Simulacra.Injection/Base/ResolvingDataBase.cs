@@ -72,7 +72,7 @@ namespace Simulacra.Injection.Base
 
         protected virtual void DisposeBindedObject() => (BindedObject as IDisposable)?.Dispose();
 
-        private T Create()
+        public T Create()
         {
             T obj = New();
             Configure(obj);
@@ -81,7 +81,7 @@ namespace Simulacra.Injection.Base
 
         protected virtual T New() => DependencyResolver.Resolve<T>();
 
-        protected void Configure(T obj)
+        public void Configure(T obj)
         {
             if (obj == null)
                 return;
@@ -91,8 +91,5 @@ namespace Simulacra.Injection.Base
             foreach (TSubConfigurator subConfigurator in SubConfiguratorsBase)
                 subConfigurator.Configure(obj);
         }
-
-        T ICreator<T>.Create() => Create();
-        void IConfigurator<T>.Configure(T obj) => Configure(obj);
     }
 }
