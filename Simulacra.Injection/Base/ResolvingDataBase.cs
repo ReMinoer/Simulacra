@@ -72,7 +72,7 @@ namespace Simulacra.Injection.Base
 
         protected virtual void DisposeBindedObject() => (BindedObject as IDisposable)?.Dispose();
 
-        public T Create()
+        public virtual T Create()
         {
             T obj = New();
             Configure(obj);
