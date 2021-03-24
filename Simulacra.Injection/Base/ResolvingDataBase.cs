@@ -58,7 +58,8 @@ namespace Simulacra.Injection.Base
                 DisposeBindedObject();
             }
 
-            BindedObject = Create();
+            BindedObject = New();
+            Configure(BindedObject);
             BindingManager.BindView(BindedObject);
 
             IsInstantiated = true;
