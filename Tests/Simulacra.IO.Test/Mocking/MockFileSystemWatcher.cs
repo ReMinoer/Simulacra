@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Simulacra.IO.Utils;
 using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Test.Mocking
@@ -22,11 +23,15 @@ namespace Simulacra.IO.Test.Mocking
             _name = name;
         }
 
-        public void Change() => Changed?.Invoke(this, new FileSystemEventArgs(WatcherChangeTypes.Changed, _folderPath, _name));
-        public void Create() => Created?.Invoke(this, new FileSystemEventArgs(WatcherChangeTypes.Created, _folderPath, _name));
-        public void Delete() => Deleted?.Invoke(this, new FileSystemEventArgs(WatcherChangeTypes.Deleted, _folderPath, _name));
-        public void RenameTo(string newName) => Renamed?.Invoke(this, new RenamedEventArgs(WatcherChangeTypes.Renamed, _folderPath, newName, _name));
-        public void RenameFrom(string oldName) => Renamed?.Invoke(this, new RenamedEventArgs(WatcherChangeTypes.Renamed, _folderPath, _name, oldName));
+        public void Change(string path) => Changed?.Invoke(this, GetEventArgs(WatcherChangeTypes.Changed, path));
+        public void Create(string path) => Created?.Invoke(this, GetEventArgs(WatcherChangeTypes.Created, path));
+        public void Delete(string path) => Deleted?.Invoke(this, GetEventArgs(WatcherChangeTypes.Deleted, path));
+        public void Rename(string path, string newName) => Renamed?.Invoke(this, new RenamedEventArgs(WatcherChangeTypes.Renamed, PathUtils.GetFolderPath(path), newName, PathUtils.GetName(path)));
+
+        private FileSystemEventArgs GetEventArgs(WatcherChangeTypes changeType, string path)
+        {
+            return new FileSystemEventArgs(changeType, PathUtils.GetFolderPath(path), PathUtils.GetName(path));
+        }
 
         public void Increment() => _counter++;
         public void Enable() {}

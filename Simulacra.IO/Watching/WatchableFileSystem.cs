@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Simulacra.IO.Utils;
 
 namespace Simulacra.IO.Watching
@@ -20,5 +22,21 @@ namespace Simulacra.IO.Watching
 
         public bool FileExists(string path) => File.Exists(path);
         public bool FolderExists(string path) => Directory.Exists(path);
+
+        public IEnumerable<string> GetFiles(PathPattern pathPattern)
+        {
+            if (!Directory.Exists(pathPattern.FolderPath))
+                return Enumerable.Empty<string>();
+
+            return Directory.GetFiles(pathPattern.FolderPath, pathPattern.NamePattern);
+        }
+
+        public IEnumerable<string> GetFolders(PathPattern pathPattern)
+        {
+            if (!Directory.Exists(pathPattern.FolderPath))
+                return Enumerable.Empty<string>();
+
+            return Directory.GetDirectories(pathPattern.FolderPath, pathPattern.NamePattern);
+        }
     }
 }

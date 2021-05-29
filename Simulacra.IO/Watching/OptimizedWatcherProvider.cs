@@ -25,6 +25,9 @@ namespace Simulacra.IO.Watching
             if (_watcherByFolder.TryGetValue(uniqueFolder, out FileSystemWatcher watcher))
                 return watcher;
 
+            if (!_fileSystem.FolderExists(uniqueFolder))
+                return null;
+
             _watcherByFolder[uniqueFolder] = watcher = new FileSystemWatcher(uniqueFolder)
             {
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.DirectoryName

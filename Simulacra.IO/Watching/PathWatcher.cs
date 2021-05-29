@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ namespace Simulacra.IO.Watching
 
         public void WatchFile(string path, FileChangedEventHandler handler)
         {
-            if (!_fileSystem.IsPathRooted(path) || _fileSystem.IsExplicitFolderPath(path))
+            if (!_fileSystem.IsPathRooted(path) || _fileSystem.IsExplicitFolderPath(path) || !PathPattern.IsValid(path))
                 throw new ArgumentException();
 
             string uniquePath = _fileSystem.UniqueFile(path);
@@ -38,15 +39,15 @@ namespace Simulacra.IO.Watching
             if (sharedWatcher == null)
                 throw new ArgumentException();
 
+            Logger?.LogInformation($"Start watching file: {uniquePath}");
+
             lock (_lock)
                 _handlers.Add((uniquePath, handler), new FileHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
-
-            Logger?.LogInformation($"Start watching file: {uniquePath}");
         }
 
         public void WatchFolder(string path, FolderChangedEventHandler handler)
         {
-            if (!_fileSystem.IsPathRooted(path))
+            if (!_fileSystem.IsPathRooted(path) || !PathPattern.IsValid(path))
                 throw new ArgumentException();
 
             string uniquePath = _fileSystem.UniqueFolder(path);
@@ -54,25 +55,66 @@ namespace Simulacra.IO.Watching
             if (sharedWatcher == null)
                 throw new ArgumentException();
 
+            Logger?.LogInformation($"Start watching folder: {uniquePath}");
+
             lock (_lock)
                 _handlers.Add((uniquePath, handler), new FolderHandlers(uniquePath, sharedWatcher, handler, LogLevel.Information));
-
-            Logger?.LogInformation($"Start watching folder: {uniquePath}");
         }
 
-        public void Unwatch(string path, FileChangedEventHandler fileHandler) => Unwatch(_fileSystem.UniqueFile(path), handler: fileHandler);
-        public void Unwatch(string path, FolderChangedEventHandler folderHandler) => Unwatch(_fileSystem.UniqueFolder(path), handler: folderHandler);
+        public void Unwatch(string path, FileChangedEventHandler fileHandler)
+        {
+            string uniquePath = _fileSystem.UniqueFile(path);
+            Logger?.LogInformation($"Stop watching file: {uniquePath}");
+
+            Unwatch(uniquePath, handler: fileHandler);
+        }
+
+        public void Unwatch(string path, FolderChangedEventHandler folderHandler)
+        {
+            string uniquePath = _fileSystem.UniqueFolder(path);
+            Logger?.LogInformation($"Stop watching folder: {uniquePath}");
+
+            Unwatch(uniquePath, handler: folderHandler);
+        }
+
         private void Unwatch(string uniquePath, Delegate handler)
         {
             lock (_lock)
             {
                 (string, Delegate) key = (uniquePath, handler);
-
                 PathHandlersBase pathHandlers = _handlers[key];
                 _handlers.Remove(key);
-                Logger?.LogDebug($"Stop watching file: {pathHandlers.UniquePath}");
 
                 pathHandlers.Release();
+            }
+        }
+
+        public IDisposable SuspendWatching(string path, FileChangedEventHandler fileHandler) => SuspendWatching(_fileSystem.UniqueFile(path), handler: fileHandler);
+        public IDisposable SuspendWatching(string path, FolderChangedEventHandler folderHandler) => SuspendWatching(_fileSystem.UniqueFolder(path), handler: folderHandler);
+        private IDisposable SuspendWatching(string uniquePath, Delegate handler)
+        {
+            lock (_lock)
+            {
+                (string, Delegate) key = (uniquePath, handler);
+                PathHandlersBase pathHandlers = _handlers[key];
+
+                return new SuspendWatchingDisposable(pathHandlers);
+            }
+        }
+
+        private class SuspendWatchingDisposable : IDisposable
+        {
+            private readonly PathHandlersBase _pathHandlers;
+
+            public SuspendWatchingDisposable(PathHandlersBase pathHandlers)
+            {
+                pathHandlers.Suspend();
+                _pathHandlers = pathHandlers;
+            }
+
+            public void Dispose()
+            {
+                _pathHandlers.Resume();
             }
         }
 
@@ -252,18 +294,27 @@ namespace Simulacra.IO.Watching
         {
             private bool _subscribed;
             private readonly bool _subscribeToChanged;
-            private bool _existedLastly;
+
+            private readonly object _lock = new object();
+            private int _suspendCounter;
+            private bool IsSuspended => _suspendCounter > 0;
+
+            private readonly ConcurrentDictionary<string, bool> _matchingPaths;
             private bool _mightBeQuicklyCreatedAfterDelete;
             private bool _mightBeQuicklyDeletedAfterCreate;
 
             public string UniquePath { get; }
+            public PathPattern PathPattern { get; }
             public SharedWatcher SharedWatcher { get; }
-            protected IWatchableFileSystem FileSystem => SharedWatcher.FileSystem;
+
             protected ILogger Logger => SharedWatcher.PathWatcher.Logger;
+            protected abstract string LoggedEntryType { get; }
 
             public PathHandlersBase(string uniquePath, SharedWatcher sharedWatcher, bool subscribeToChanged)
             {
                 UniquePath = uniquePath;
+                PathPattern = new PathPattern(uniquePath, sharedWatcher.FileSystem.PathsCaseSensitive);
+
                 SharedWatcher = sharedWatcher;
                 _subscribeToChanged = subscribeToChanged;
 
@@ -271,30 +322,61 @@ namespace Simulacra.IO.Watching
                 SharedWatcher.FolderCreated += OnParentFolderCreated;
                 SharedWatcher.FolderDeleted += OnParentFolderDeleted;
 
-                _existedLastly = PathExist();
+                PathCaseComparison caseComparison = sharedWatcher.FileSystem.PathsCaseSensitive
+                    ? PathCaseComparison.RespectCase
+                    : PathCaseComparison.IgnoreCase;
+
+                var existingPathComparer = new PathComparer(caseComparison, FolderPathEquality.RespectAmbiguity);
+                _matchingPaths = new ConcurrentDictionary<string, bool>(existingPathComparer);
+
+                RefreshExistingMatchingPaths();
                 SubscribeToWatcher();
             }
 
+            protected abstract bool PathExist(string path);
+            protected abstract IEnumerable<string> GetExistingMatchingPaths();
+
+            protected virtual void NotifyEdited(string path) => throw new InvalidOperationException();
+            protected abstract void NotifyCreated(string path, string oldPath = null);
+            protected abstract void NotifyDeleted(string path, string newPath = null);
+
             private void OnParentFolderCreated()
             {
-                if (!_existedLastly && PathExist())
+                lock (_lock)
                 {
-                    _existedLastly = true;
-                    NotifyCreated();
-                }
+                    if (IsSuspended)
+                        return;
 
-                SubscribeToWatcher();
+                    foreach (string createdPath in GetExistingMatchingPaths().Where(TryRegisterMatchingPath))
+                        NotifyCreated(createdPath);
+
+                    SubscribeToWatcher();
+                }
             }
 
             private void OnParentFolderDeleted()
             {
-                UnsubscribeToWatcher();
-
-                if (_existedLastly)
+                lock (_lock)
                 {
-                    _existedLastly = false;
-                    NotifyDeleted();
+                    if (IsSuspended)
+                        return;
+
+                    UnsubscribeToWatcher();
+
+                    foreach (string pathToDelete in _matchingPaths.Keys.Where(TryUnregisterMatchingPath))
+                        NotifyDeleted(pathToDelete);
+
+                    if (_matchingPaths.Count > 0)
+                        throw new InvalidOperationException();
                 }
+            }
+
+            private void RefreshExistingMatchingPaths()
+            {
+                _matchingPaths.Clear();
+
+                foreach (string existingMatchingPath in GetExistingMatchingPaths())
+                    RegisterMatchingPath(existingMatchingPath);
             }
 
             private void SubscribeToWatcher()
@@ -336,72 +418,101 @@ namespace Simulacra.IO.Watching
 
             public void Release()
             {
-                UnsubscribeToWatcher();
-                SharedWatcher.Release();
+                lock (_lock)
+                {
+                    UnsubscribeToWatcher();
+                    SharedWatcher.Release();
+                }
             }
-
-            protected virtual void NotifyEdited() => throw new InvalidOperationException();
-            protected abstract void NotifyCreated(string oldPath = null);
-            protected abstract void NotifyDeleted(string newPath = null);
-            protected abstract bool PathExist();
 
             private void OnChanged(object sender, System.IO.FileSystemEventArgs e)
             {
-                if (MatchExisting(e.FullPath))
-                    NotifyEdited();
+                lock (_lock)
+                {
+                    if (IsSuspended)
+                        return;
+
+                    if (MatchExisting(e.FullPath))
+                        NotifyEdited(e.FullPath);
+                }
             }
 
             private void OnCreated(object sender, System.IO.FileSystemEventArgs e)
             {
-                if (MatchCreated(e.FullPath))
+                lock (_lock)
                 {
-                    _existedLastly = true;
-                    NotifyCreated();
+                    if (IsSuspended)
+                        return;
+
+                    if (MatchCreated(e.FullPath) && TryRegisterMatchingPath(e.FullPath))
+                        NotifyCreated(e.FullPath);
                 }
             }
 
             private void OnDeleted(object sender, System.IO.FileSystemEventArgs e)
             {
-                if (MatchDeleted(e.FullPath))
+                lock (_lock)
                 {
-                    _existedLastly = false;
-                    NotifyDeleted();
+                    if (IsSuspended)
+                        return;
+
+                    if (MatchDeleted(e.FullPath) && TryUnregisterMatchingPath(e.FullPath))
+                        NotifyDeleted(e.FullPath);
                 }
             }
 
             private void OnRenamed(object sender, System.IO.RenamedEventArgs e)
             {
-                if (MatchDeleted(e.OldFullPath))
+                lock (_lock)
                 {
-                    _existedLastly = false;
-                    NotifyDeleted(newPath: e.FullPath);
-                }
-                else if (MatchCreated(e.FullPath))
-                {
-                    _existedLastly = true;
-                    NotifyCreated(oldPath: e.OldFullPath);
+                    if (IsSuspended)
+                        return;
+
+                    if (MatchDeleted(e.OldFullPath) && TryUnregisterMatchingPath(e.OldFullPath))
+                        NotifyDeleted(e.OldFullPath, newPath: e.FullPath);
+                    else if (MatchCreated(e.FullPath) && TryRegisterMatchingPath(e.FullPath))
+                        NotifyCreated(e.FullPath, oldPath: e.OldFullPath);
                 }
             }
 
-            private bool EqualsPath(string path)
+            private void RegisterMatchingPath(string path)
             {
-                PathCaseComparison caseComparison = FileSystem.PathsCaseSensitive ? PathCaseComparison.RespectCase : PathCaseComparison.IgnoreCase;
-                return PathComparer.Equals(path, UniquePath, caseComparison, FolderPathEquality.RespectAmbiguity);
+                if (!TryRegisterMatchingPath(path))
+                    throw new InvalidOperationException();
             }
 
-            protected bool MatchExisting(string path) => EqualsPath(path) && PathExist();
+            private void UnregisterMatchingPath(string path)
+            {
+                if (!TryUnregisterMatchingPath(path))
+                    throw new InvalidOperationException();
+            }
+
+            private bool TryRegisterMatchingPath(string path)
+            {
+                Logger?.LogDebug($"Found path {path} (matching {UniquePath})");
+                return _matchingPaths.TryAdd(path, true);
+            }
+
+            private bool TryUnregisterMatchingPath(string path)
+            {
+                Logger?.LogInformation($"Forget path {path} (matching {UniquePath})");
+                return _matchingPaths.TryRemove(path, out _);
+            }
+
+            protected bool MatchExisting(string path) => PathPattern.Match(path) && PathExist(path);
             protected bool MatchCreated(string path)
             {
                 // Check path
-                if (EqualsPath(path))
+                if (PathPattern.Match(path))
                 {
                     // Also check file/folder DO exists since we might be watching for a folder/file with same path.
-                    if (PathExist())
+                    if (PathExist(path))
                     {
                         // Notify DELETED if we had doubts previously
                         if (_mightBeQuicklyCreatedAfterDelete)
                         {
-                            NotifyDeleted();
+                            UnregisterMatchingPath(path);
+                            NotifyDeleted(path);
                             _mightBeQuicklyCreatedAfterDelete = false;
                         }
 
@@ -423,15 +534,16 @@ namespace Simulacra.IO.Watching
             protected bool MatchDeleted(string path)
             {
                 // Check path
-                if (EqualsPath(path))
+                if (PathPattern.Match(path))
                 {
                     // Also check file/folder DOES NOT exists since we might be watching for a folder/file with same path.
-                    if (!PathExist())
+                    if (!PathExist(path))
                     {
                         // Notify CREATED if we had doubts previously
                         if (_mightBeQuicklyDeletedAfterCreate)
                         {
-                            NotifyCreated();
+                            RegisterMatchingPath(path);
+                            NotifyCreated(path);
                             _mightBeQuicklyDeletedAfterCreate = false;
                         }
 
@@ -449,12 +561,43 @@ namespace Simulacra.IO.Watching
                 _mightBeQuicklyDeletedAfterCreate = false;
                 return false;
             }
+
+            public void Suspend()
+            {
+                lock (_lock)
+                {
+                    if (_suspendCounter == 0)
+                    {
+                        Logger?.LogInformation($"Suspend watching {LoggedEntryType}: {UniquePath}");
+                        UnsubscribeToWatcher();
+                    }
+
+                    _suspendCounter++;
+                }
+            }
+
+            public void Resume()
+            {
+                lock (_lock)
+                {
+                    _suspendCounter--;
+
+                    if (_suspendCounter == 0)
+                    {
+                        Logger?.LogInformation($"Resume watching {LoggedEntryType}: {UniquePath}");
+                        SubscribeToWatcher();
+                        RefreshExistingMatchingPaths();
+                    }
+                }
+            }
         }
 
         private class FileHandlers : PathHandlersBase
         {
             private readonly FileChangedEventHandler _handler;
             private readonly LogLevel _logLevel;
+
+            protected override string LoggedEntryType => "file";
 
             public FileHandlers(string uniquePath, SharedWatcher sharedWatcher, FileChangedEventHandler handler, LogLevel logLevel)
                 : base(uniquePath, sharedWatcher, subscribeToChanged: true)
@@ -463,15 +606,17 @@ namespace Simulacra.IO.Watching
                 _logLevel = logLevel;
             }
 
-            protected override bool PathExist() => SharedWatcher.FileSystem.FileExists(UniquePath);
-            protected override void NotifyEdited() => Notify(FileChangeType.Edited);
-            protected override void NotifyCreated(string oldPath = null) => Notify(FileChangeType.Created, oldPath: oldPath);
-            protected override void NotifyDeleted(string newPath = null) => Notify(FileChangeType.Deleted, newPath: newPath);
+            protected override bool PathExist(string path) => SharedWatcher.FileSystem.FileExists(path);
+            protected override IEnumerable<string> GetExistingMatchingPaths() => SharedWatcher.FileSystem.GetFiles(PathPattern);
 
-            private void Notify(FileChangeType changeType, string newPath = null, string oldPath = null)
+            protected override void NotifyEdited(string path) => Notify(FileChangeType.Edited, path);
+            protected override void NotifyCreated(string path, string oldPath = null) => Notify(FileChangeType.Created, path, oldPath: oldPath);
+            protected override void NotifyDeleted(string path, string newPath = null) => Notify(FileChangeType.Deleted, path, newPath: newPath);
+
+            private void Notify(FileChangeType changeType, string path, string newPath = null, string oldPath = null)
             {
-                _handler(SharedWatcher.PathWatcher, new FileChangedEventArgs(UniquePath, changeType, newPath, oldPath));
-                Logger?.Log(_logLevel, $"{changeType} file: {UniquePath}");
+                _handler(SharedWatcher.PathWatcher, new FileChangedEventArgs(PathPattern, path, changeType, newPath, oldPath));
+                Logger?.Log(_logLevel, $"{changeType} file: {path} (matching {UniquePath})");
             }
         }
 
@@ -480,6 +625,8 @@ namespace Simulacra.IO.Watching
             private readonly FolderChangedEventHandler _handler;
             private readonly LogLevel _logLevel;
 
+            protected override string LoggedEntryType => "folder";
+
             public FolderHandlers(string uniquePath, SharedWatcher sharedWatcher, FolderChangedEventHandler handler, LogLevel logLevel)
                 : base(uniquePath, sharedWatcher, subscribeToChanged: false)
             {
@@ -487,14 +634,16 @@ namespace Simulacra.IO.Watching
                 _logLevel = logLevel;
             }
 
-            protected override bool PathExist() => SharedWatcher.FileSystem.FolderExists(UniquePath);
-            protected override void NotifyCreated(string oldPath = null) => Notify(FolderChangeType.Created, oldPath: oldPath);
-            protected override void NotifyDeleted(string newPath = null) => Notify(FolderChangeType.Deleted, newPath: newPath);
+            protected override bool PathExist(string path) => SharedWatcher.FileSystem.FolderExists(path);
+            protected override IEnumerable<string> GetExistingMatchingPaths() => SharedWatcher.FileSystem.GetFolders(PathPattern);
 
-            private void Notify(FolderChangeType changeType, string newPath = null, string oldPath = null)
+            protected override void NotifyCreated(string path, string oldPath = null) => Notify(FolderChangeType.Created, path, oldPath: oldPath);
+            protected override void NotifyDeleted(string path, string newPath = null) => Notify(FolderChangeType.Deleted, path, newPath: newPath);
+
+            private void Notify(FolderChangeType changeType, string path, string newPath = null, string oldPath = null)
             {
-                _handler(SharedWatcher.PathWatcher, new FolderChangedEventArgs(UniquePath, changeType, newPath, oldPath));
-                Logger?.Log(_logLevel, $"{changeType} folder: {UniquePath}");
+                _handler(SharedWatcher.PathWatcher, new FolderChangedEventArgs(PathPattern, path, changeType, newPath, oldPath));
+                Logger?.Log(_logLevel, $"{changeType} folder: {path} (matching {UniquePath})");
             }
         }
     }
