@@ -339,7 +339,7 @@ namespace Simulacra.Utils
             }
 
             NotifyPropertyChanged(nameof(Lengths));
-            ArrayChanged?.Invoke(this, ArrayChangedEventArgs.Resize(Lengths, oldLengths));
+            ArrayChanged?.Invoke(this, ArrayChangedEventArgs.Resize(newLengths, oldLengths));
         }
 
         private bool NeedIncreaseCapacities(int[] newLengths, out int[] newCapacities)
