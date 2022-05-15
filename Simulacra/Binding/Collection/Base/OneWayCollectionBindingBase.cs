@@ -7,14 +7,14 @@ namespace Simulacra.Binding.Collection.Base
 {
     public abstract class OneWayCollectionBindingBase<TModel, TView, TModelItem, TViewItem> : IOneWayBinding<TModel, TView, NotifyCollectionChangedEventArgs>
     {
-        private readonly Func<TModel, IEnumerable<TModelItem>> _referenceGetter;
+        protected readonly Func<TModel, IEnumerable<TModelItem>> _referenceGetter;
 
         protected OneWayCollectionBindingBase(Func<TModel, IEnumerable<TModelItem>> referenceGetter)
         {
             _referenceGetter = referenceGetter;
         }
 
-        public void SetView(TModel model, TView view)
+        public virtual void SetView(TModel model, TView view)
         {
             AddItems(model, _referenceGetter(model), view);
         }
