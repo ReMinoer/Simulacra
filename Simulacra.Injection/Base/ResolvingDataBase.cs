@@ -53,10 +53,7 @@ namespace Simulacra.Injection.Base
         public virtual void Instantiate()
         {
             if (BindedObject != null)
-            {
-                BindingManager.UnbindView();
-                DisposeBindedObject();
-            }
+                ReleaseBindedObject();
 
             BindedObject = New();
             Configure(BindedObject);
@@ -65,13 +62,27 @@ namespace Simulacra.Injection.Base
             IsInstantiated = true;
         }
 
+        public void Release()
+        {
+            ReleaseBindedObject();
+            BindedObject = null;
+        }
+
         public virtual void Dispose()
+        {
+            ReleaseBindedObject();
+        }
+
+        protected virtual void ReleaseBindedObject()
         {
             BindingManager.UnbindView();
             DisposeBindedObject();
         }
 
-        protected virtual void DisposeBindedObject() => (BindedObject as IDisposable)?.Dispose();
+        protected virtual void DisposeBindedObject()
+        {
+            (BindedObject as IDisposable)?.Dispose();
+        }
 
         public virtual T Create()
         {
