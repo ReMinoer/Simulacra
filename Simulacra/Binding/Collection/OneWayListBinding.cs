@@ -47,7 +47,7 @@ namespace Simulacra.Binding.Collection
         protected override TViewItem GetBindedViewItem(TView view, TModel model, TModelItem modelItem) => _listGetter(view).First(x => _itemEquality(modelItem, x));
 
         protected override void InsertViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index) => _listGetter(view).InsertMany(index, viewItems);
-        protected override void ReplaceViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int oldIndex, int newIndex) => _listGetter(view).ReplaceRange(oldIndex, newIndex, viewItems);
+        protected override void ReplaceViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index) => _listGetter(view).ReplaceRange(index, viewItems);
         protected override void MoveViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index) => _listGetter(view).MoveMany(viewItems, index);
     }
 }

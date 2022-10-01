@@ -23,7 +23,7 @@ namespace Simulacra.Binding.Collection.Base
                 }
                 case NotifyCollectionChangedAction.Replace:
                 {
-                    ReplaceItems(model, e.NewItems.Cast<TModelItem>(), e.OldStartingIndex, e.NewStartingIndex, view);
+                    ReplaceItems(model, e.NewItems.Cast<TModelItem>(), e.NewStartingIndex, view);
                     return;
                 }
                 case NotifyCollectionChangedAction.Move:
@@ -38,9 +38,9 @@ namespace Simulacra.Binding.Collection.Base
                 }
             }
         }
-        
+
         protected abstract void InsertViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index);
-        protected abstract void ReplaceViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int oldIndex, int newIndex);
+        protected abstract void ReplaceViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index);
         protected abstract void MoveViewItems(TView view, IEnumerable<TViewItem> viewItems, TModel model, IEnumerable<TModelItem> modelItems, int index);
 
         protected void InsertItems(TModel model, IEnumerable<TModelItem> modelItems, int index, TView view)
@@ -49,10 +49,10 @@ namespace Simulacra.Binding.Collection.Base
             InsertViewItems(view, modelItems.Select(x => CreateBindedViewItem(view, model, x)), model, modelItems, index);
         }
 
-        protected void ReplaceItems(TModel model, IEnumerable<TModelItem> modelItems, int oldIndex, int newIndex, TView view)
+        protected void ReplaceItems(TModel model, IEnumerable<TModelItem> modelItems, int index, TView view)
         {
             modelItems = modelItems.ToArray();
-            ReplaceViewItems(view, modelItems.Select(x => CreateBindedViewItem(view, model, x)), model, modelItems, oldIndex, newIndex);
+            ReplaceViewItems(view, modelItems.Select(x => CreateBindedViewItem(view, model, x)), model, modelItems, index);
         }
 
         protected void MoveItems(TModel model, IEnumerable<TModelItem> modelItems, int index, TView view)

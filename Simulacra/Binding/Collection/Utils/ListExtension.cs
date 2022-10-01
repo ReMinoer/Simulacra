@@ -8,31 +8,33 @@ namespace Simulacra.Binding.Collection.Utils
         static public void InsertMany<T>(this IList<T> list, int index, IEnumerable<T> items)
         {
             foreach (T item in items)
-                list.Insert(index++, item);
-        }
-
-        static public void ReplaceRange<T>(this IList<T> list, int oldStartingIndex, int newStartingIndex, IEnumerable<T> newItems)
-        {
-            foreach (T newItem in newItems)
             {
-                list.RemoveAt(oldStartingIndex++);
-                list.Insert(newStartingIndex++, newItem);
+                list.Insert(index, item);
+                index++;
             }
         }
 
-        static public bool MoveMany<T>(this IList<T> list, IEnumerable<T> items, int newIndex)
+        static public void ReplaceRange<T>(this IList<T> list, int index, IEnumerable<T> newItems)
+        {
+            foreach (T newItem in newItems)
+            {
+                list.RemoveAt(index);
+                list.Insert(index, newItem);
+                index++;
+            }
+        }
+
+        static public bool MoveMany<T>(this IList<T> list, IEnumerable<T> items, int index)
         {
             T[] itemsArray = items.ToArray();
-            List<int> indexes = itemsArray.Select(list.IndexOf).ToList();
-            if (indexes.Any(x => x == -1))
+            int[] oldIndices = itemsArray.Select(list.IndexOf).OrderByDescending(x => x).ToArray();
+            if (oldIndices.Any(x => x == -1))
                 return false;
 
-            indexes.Sort(Comparer<int>.Create((x, y) => y - x));
+            foreach (int oldIndex in oldIndices)
+                list.RemoveAt(oldIndex);
 
-            foreach (int index in indexes)
-                list.RemoveAt(index);
-
-            list.InsertMany(newIndex, itemsArray);
+            list.InsertMany(index, itemsArray);
             return true;
         }
     }
