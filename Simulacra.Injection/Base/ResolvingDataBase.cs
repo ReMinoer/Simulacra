@@ -91,7 +91,7 @@ namespace Simulacra.Injection.Base
             return obj;
         }
 
-        protected virtual T New() => DependencyResolver.Resolve<T>();
+        protected virtual T New() => DependencyResolver.Resolve<T>(origins: InstanceOrigins.Instantiation);
 
         public void Configure(T obj)
         {
