@@ -6,6 +6,16 @@
         public int[] Lengths { get; }
         public int Rank => Lengths.Length;
 
+        public IndexRange(int i, int length)
+            : this(new [] {i}, new [] {length})
+        {
+        }
+        
+        public IndexRange(int i, int j, int rows, int columns)
+            : this(new [] {i, j}, new [] {rows, columns})
+        {
+        }
+
         public IndexRange(int[] lengths)
             : this(new int[lengths.Length], lengths)
         {

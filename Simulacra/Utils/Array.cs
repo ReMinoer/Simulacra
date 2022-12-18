@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Enumerable = System.Linq.Enumerable;
 // Do not using System.Linq for performance
@@ -67,8 +68,28 @@ namespace Simulacra.Utils
 
         public T this[int i]
         {
-            get => GetValue(a => a[i], x => IndexSwitch(x, i));
-            set => SetValue(a => a[i], (a, x) => a[i] = x, value, x => IndexSwitch(x, i), () => new[] { i });
+            get
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                return Data[i];
+            }
+            set
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+
+                if (!IsNotifying)
+                {
+                    Data[i] = value;
+                    return;
+                }
+
+                T previousValue = this[i];
+                if (Equals(previousValue, value))
+                    return;
+                
+                Data[i] = value;
+                NotifyValueChanged(value, previousValue, i);
+            }
         }
 
         object IOneDimensionArray.this[int i] => this[i];
@@ -88,10 +109,10 @@ namespace Simulacra.Utils
         }
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;
-        protected override void OnSetValue(T value, T oldValue, Func<int, int> indexesFunc, Func<int[]> indexesArrayFunc)
+        protected override void NotifyValueChanged(T value, T oldValue, params int[] indexes)
         {
-            base.OnSetValue(value, oldValue, indexesFunc, indexesArrayFunc);
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldValue, indexesFunc(0)));
+            base.NotifyValueChanged(value, oldValue, indexes);
+            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldValue, indexes[0]));
         }
 
         bool ICollection.IsSynchronized => false;
@@ -136,8 +157,30 @@ namespace Simulacra.Utils
 
         public T this[int i, int j]
         {
-            get => GetValue(a => a[i, j], x => IndexSwitch(x, i, j));
-            set => SetValue(a => a[i, j], (a, x) => a[i, j] = x, value, x => IndexSwitch(x, i, j), () => new[] { i, j });
+            get
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                ThrowOnIndexOutOfRange(j, Lengths[1]);
+                return Data[i, j];
+            }
+            set
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                ThrowOnIndexOutOfRange(j, Lengths[1]);
+
+                if (!IsNotifying)
+                {
+                    Data[i, j] = value;
+                    return;
+                }
+
+                T previousValue = this[i, j];
+                if (Equals(previousValue, value))
+                    return;
+                
+                Data[i, j] = value;
+                NotifyValueChanged(value, previousValue, i, j);
+            }
         }
 
         object ITwoDimensionArray.this[int i, int j] => this[i, j];
@@ -178,8 +221,32 @@ namespace Simulacra.Utils
 
         public T this[int i, int j, int k]
         {
-            get => GetValue(a => a[i, j, k], x => IndexSwitch(x, i, j, k));
-            set => SetValue(a => a[i, j, k], (a, x) => a[i, j, k] = x, value, x => IndexSwitch(x, i, j, k), () => new[] { i, j, k });
+            get
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                ThrowOnIndexOutOfRange(j, Lengths[1]);
+                ThrowOnIndexOutOfRange(k, Lengths[2]);
+                return Data[i, j, k];
+            }
+            set
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                ThrowOnIndexOutOfRange(j, Lengths[1]);
+                ThrowOnIndexOutOfRange(k, Lengths[2]);
+
+                if (!IsNotifying)
+                {
+                    Data[i, j, k] = value;
+                    return;
+                }
+
+                T previousValue = this[i, j, k];
+                if (Equals(previousValue, value))
+                    return;
+                
+                Data[i, j, k] = value;
+                NotifyValueChanged(value, previousValue, i, j, k);
+            }
         }
 
         object IThreeDimensionArray.this[int i, int j, int k] => this[i, j, k];
@@ -220,8 +287,34 @@ namespace Simulacra.Utils
 
         public T this[int i, int j, int k, int l]
         {
-            get => GetValue(a => a[i, j, k, l], x => IndexSwitch(x, i, j, k, l));
-            set => SetValue(a => a[i, j, k, l], (a, x) => a[i, j, k, l] = x, value, x => IndexSwitch(x, i, j, k, l), () => new []{i, j, k, l});
+            get
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                ThrowOnIndexOutOfRange(j, Lengths[1]);
+                ThrowOnIndexOutOfRange(k, Lengths[2]);
+                ThrowOnIndexOutOfRange(l, Lengths[3]);
+                return Data[i, j, k, l];
+            }
+            set
+            {
+                ThrowOnIndexOutOfRange(i, Lengths[0]);
+                ThrowOnIndexOutOfRange(j, Lengths[1]);
+                ThrowOnIndexOutOfRange(k, Lengths[2]);
+                ThrowOnIndexOutOfRange(l, Lengths[3]);
+
+                if (!IsNotifying)
+                {
+                    Data[i, j, k, l] = value;
+                    return;
+                }
+
+                T previousValue = this[i, j, k, l];
+                if (Equals(previousValue, value))
+                    return;
+                
+                Data[i, j, k, l] = value;
+                NotifyValueChanged(value, previousValue, i, j, k, l);
+            }
         }
 
         object IFourDimensionArray.this[int i, int j, int k, int l] => this[i, j, k, l];
@@ -310,12 +403,6 @@ namespace Simulacra.Utils
             _capacities = capacities;
         }
 
-        public T this[params int[] indexes]
-        {
-            get => GetValue(a => Get(a, indexes), i => indexes[i]);
-            set => SetValue(a => Get(a, indexes), (a, x) => Set(a, indexes, x), value, i => indexes[i], () => indexes);
-        }
-
         public void Resize(int[] newLengths, bool keepValues = true, Func<T, int[], T> valueFactory = null)
         {
             int[] oldLengths = Enumerable.ToArray(_lengths);
@@ -364,54 +451,16 @@ namespace Simulacra.Utils
             return false;
         }
 
-        protected T GetValue(Func<TData, T> getter, Func<int, int> indexesFunc)
+        protected void ThrowOnIndexOutOfRange(int index, int length)
         {
-            for (int r = 0; r < Rank; r++)
-            {
-                int index = indexesFunc(r);
-                if (index < 0 && index >= _lengths[r])
-                    throw new IndexOutOfRangeException();
-            }
-
-            return getter(Data);
+            if (index < 0 && index >= length)
+                throw new IndexOutOfRangeException();
         }
 
-        protected void SetValue(Func<TData, T> getter, Action<TData, T> setter, T value, Func<int, int> indexesFunc, Func<int[]> indexesArrayFunc)
+        protected virtual bool IsNotifying => ArrayChanged != null;
+        protected virtual void NotifyValueChanged(T value, T oldValue, params int[] indexes)
         {
-            T previousValue = GetValue(getter, indexesFunc);
-            if (EqualityComparer<T>.Default.Equals(previousValue, value))
-                return;
-
-            setter(Data, value);
-            OnSetValue(value, previousValue, indexesFunc, indexesArrayFunc);
-        }
-
-        protected virtual void OnSetValue(T value, T oldValue, Func<int, int> indexesFunc, Func<int[]> indexesArrayFunc)
-        {
-            if (ArrayChanged == null)
-                return;
-
-            int[] indexes = indexesArrayFunc?.Invoke();
-            if (indexes == null)
-            {
-                indexes = new int[Rank];
-                for (int i = 0; i < indexes.Length; i++)
-                    indexes[i] = indexesFunc(i);
-            }
-
-            ArrayChanged?.Invoke(this, ArrayChangedEventArgs.Replace(indexes, CreateValueArray(value), CreateValueArray(oldValue)));
-        }
-
-        static protected int IndexSwitch(int rank, int i = -1, int j = -1, int k = -1, int l = -1)
-        {
-            switch (rank)
-            {
-                case 0: return i;
-                case 1: return j;
-                case 2: return k;
-                case 3: return l;
-                default: throw new NotSupportedException();
-            }
+            ArrayChanged?.Invoke(this, ArrayChangedEventArgs.Replace(indexes.ToArray(), CreateValueArray(value), CreateValueArray(oldValue)));
         }
 
         protected abstract T Get(TData data, int[] indexes);
@@ -420,6 +469,12 @@ namespace Simulacra.Utils
         protected abstract TData ResizeData(TData data, int[] capacities, int[] lengths, bool keepValues, Func<T, int[], T> valueFactory);
         protected abstract void FillData(TData data, Func<T, int[], T> valueFactory, IEnumerable<int[]> indexEnumerable);
         protected abstract Array CreateValueArray(T value);
+        
+        public T this[params int[] indexes]
+        {
+            get => Get(Data, indexes);
+            set => Set(Data, indexes, value);
+        }
 
         T IArray<T>.this[params int[] indexes] => Get(Data, indexes);
         object IArray.this[params int[] indexes] => Get(Data, indexes);
