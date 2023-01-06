@@ -34,8 +34,8 @@ namespace Simulacra.Utils
         {
             var lengths = new int[array.Rank];
 
-            for (int i = 0; i < array.Rank; i++)
-                lengths[i] = array.GetLength(i);
+            for (int r = 0; r < array.Rank; r++)
+                lengths[r] = array.GetLength(r);
 
             return lengths;
         }
@@ -44,8 +44,8 @@ namespace Simulacra.Utils
         {
             var lengths = new int[array.Rank];
 
-            for (int i = 0; i < array.Rank; i++)
-                lengths[i] = array.GetLength(i);
+            for (int r = 0; r < array.Rank; r++)
+                lengths[r] = array.GetLength(r);
 
             return lengths;
         }
@@ -66,14 +66,14 @@ namespace Simulacra.Utils
 
         static public void GetStartingIndex(this Array array, int[] indexes)
         {
-            for (int i = 0; i < array.Rank; i++)
-                indexes[i] = array.GetLowerBound(i);
+            for (int r = 0; r < array.Rank; r++)
+                indexes[r] = array.GetLowerBound(r);
         }
 
         static public void GetStartingIndex(this IArrayDefinition array, int[] indexes)
         {
-            for (int i = 0; i < array.Rank; i++)
-                indexes[i] = array.GetLowerBound(i);
+            for (int r = 0; r < array.Rank; r++)
+                indexes[r] = array.GetLowerBound(r);
         }
 
         static public void GetStartingIndex(this Array array, out int i)
@@ -114,14 +114,14 @@ namespace Simulacra.Utils
 
         static public void GetEndingIndex(this Array array, int[] indexes)
         {
-            for (int i = 0; i < array.Rank; i++)
-                indexes[i] = array.GetUpperBound(i);
+            for (int r = 0; r < array.Rank; r++)
+                indexes[r] = array.GetUpperBound(r);
         }
 
         static public void GetEndingIndex(this IArrayDefinition array, int[] indexes)
         {
-            for (int i = 0; i < array.Rank; i++)
-                indexes[i] = array.GetUpperBound(i);
+            for (int r = 0; r < array.Rank; r++)
+                indexes[r] = array.GetUpperBound(r);
         }
 
         static public int[] GetResetIndex(this Array array)
@@ -178,6 +178,11 @@ namespace Simulacra.Utils
         {
             indexes[array.Rank - 1]++;
 
+            // Check indexes of previous dimension are in bounds.
+            for (int r = 0; r < array.Rank - 1; r++)
+                if (indexes[r] >= array.GetOutOfBound(r))
+                    return false;
+            
             for (int r = array.Rank - 1; r >= 0; r--)
             {
                 if (indexes[r] < array.GetOutOfBound(r))
@@ -196,7 +201,12 @@ namespace Simulacra.Utils
         static public bool MoveIndex(this IArrayDefinition array, int[] indexes)
         {
             indexes[array.Rank - 1]++;
-
+            
+            // Check indexes of previous dimension are in bounds.
+            for (int r = 0; r < array.Rank - 1; r++)
+                if (indexes[r] >= array.GetOutOfBound(r))
+                    return false;
+            
             for (int r = array.Rank - 1; r >= 0; r--)
             {
                 if (indexes[r] < array.GetOutOfBound(r))
@@ -221,10 +231,15 @@ namespace Simulacra.Utils
         static public bool MoveIndex(this Array array, ref int i, ref int j)
         {
             j++;
+
+            // Check indexes of previous dimension are in bounds.
+            if (i >= array.GetOutOfBound(0))
+                return false;
+            
             if (j < array.GetOutOfBound(1))
                 return true;
+            j = array.GetLowerBound(1);
 
-            j = 0;
             i++;
             return i < array.GetOutOfBound(0);
         }
@@ -238,10 +253,15 @@ namespace Simulacra.Utils
         static public bool MoveIndex(this IArrayDefinition array, ref int i, ref int j)
         {
             j++;
+
+            // Check indexes of previous dimension are in bounds.
+            if (i >= array.GetOutOfBound(0))
+                return false;
+
             if (j < array.GetOutOfBound(1))
                 return true;
+            j = array.GetLowerBound(1);
 
-            j = 0;
             i++;
             return i < array.GetOutOfBound(0);
         }
