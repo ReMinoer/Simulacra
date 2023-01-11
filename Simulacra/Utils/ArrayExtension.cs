@@ -20,6 +20,32 @@ namespace Simulacra.Utils
             return array.GetLowerBound(dimension) + array.GetLength(dimension) - 1;
         }
 
+        static public int[] GetOutOfBounds(this Array array)
+        {
+            var outOfBounds = new int[array.Rank];
+            GetOutOfBounds(array, outOfBounds);
+            return outOfBounds;
+        }
+
+        static public int[] GetOutOfBounds(this IArrayDefinition array)
+        {
+            var outOfBounds = new int[array.Rank];
+            GetOutOfBounds(array, outOfBounds);
+            return outOfBounds;
+        }
+
+        static private void GetOutOfBounds(this Array array, int[] outOfBounds)
+        {
+            for (int r = 0; r < array.Rank; r++)
+                outOfBounds[r] = array.GetOutOfBound(r);
+        }
+
+        static private void GetOutOfBounds(this IArrayDefinition array, int[] outOfBounds)
+        {
+            for (int r = 0; r < array.Rank; r++)
+                outOfBounds[r] = array.GetOutOfBound(r);
+        }
+
         static public int GetOutOfBound(this Array array, int dimension)
         {
             return array.GetLowerBound(dimension) + array.GetLength(dimension);
@@ -66,34 +92,84 @@ namespace Simulacra.Utils
 
         static public void GetStartingIndex(this Array array, int[] indexes)
         {
+            // If array is empty, return out of bounds indexes for every dimension.
+            for (int r = 0; r < array.Rank; r++)
+            {
+                if (array.GetLength(r) == 0)
+                {
+                    GetOutOfBounds(array, indexes);
+                    return;
+                }
+            }
+
             for (int r = 0; r < array.Rank; r++)
                 indexes[r] = array.GetLowerBound(r);
         }
 
         static public void GetStartingIndex(this IArrayDefinition array, int[] indexes)
         {
+            // If array is empty, return out of bounds indexes for every dimension.
+            for (int r = 0; r < array.Rank; r++)
+            {
+                if (array.GetLength(r) == 0)
+                {
+                    GetOutOfBounds(array, indexes);
+                    return;
+                }
+            }
+
             for (int r = 0; r < array.Rank; r++)
                 indexes[r] = array.GetLowerBound(r);
         }
 
         static public void GetStartingIndex(this Array array, out int i)
         {
+            // If array is empty, return out of bounds indexes for every dimension.
+            if (array.GetLength(0) == 0)
+            {
+                i = array.GetOutOfBound(0);
+                return;
+            }
+
             i = array.GetLowerBound(0);
         }
 
         static public void GetStartingIndex(this Array array, out int i, out int j)
         {
+            // If array is empty, return out of bounds indexes for every dimension.
+            if (array.GetLength(0) == 0 || array.GetLength(1) == 0)
+            {
+                i = array.GetOutOfBound(0);
+                j = array.GetOutOfBound(1);
+                return;
+            }
+
             i = array.GetLowerBound(0);
             j = array.GetLowerBound(1);
         }
 
         static public void GetStartingIndex(this IArrayDefinition array, out int i)
         {
+            // If array is empty, return out of bounds indexes for every dimension.
+            if (array.GetLength(0) == 0)
+            {
+                i = array.GetOutOfBound(0);
+                return;
+            }
+
             i = array.GetLowerBound(0);
         }
 
         static public void GetStartingIndex(this IArrayDefinition array, out int i, out int j)
         {
+            // If array is empty, return out of bounds indexes for every dimension.
+            if (array.GetLength(0) == 0 || array.GetLength(1) == 0)
+            {
+                i = array.GetOutOfBound(0);
+                j = array.GetOutOfBound(1);
+                return;
+            }
+
             i = array.GetLowerBound(0);
             j = array.GetLowerBound(1);
         }
@@ -177,11 +253,6 @@ namespace Simulacra.Utils
         static public bool MoveIndex(this Array array, int[] indexes)
         {
             indexes[array.Rank - 1]++;
-
-            // Check indexes of previous dimension are in bounds.
-            for (int r = 0; r < array.Rank - 1; r++)
-                if (indexes[r] >= array.GetOutOfBound(r))
-                    return false;
             
             for (int r = array.Rank - 1; r >= 0; r--)
             {
@@ -201,11 +272,6 @@ namespace Simulacra.Utils
         static public bool MoveIndex(this IArrayDefinition array, int[] indexes)
         {
             indexes[array.Rank - 1]++;
-            
-            // Check indexes of previous dimension are in bounds.
-            for (int r = 0; r < array.Rank - 1; r++)
-                if (indexes[r] >= array.GetOutOfBound(r))
-                    return false;
             
             for (int r = array.Rank - 1; r >= 0; r--)
             {
@@ -232,10 +298,6 @@ namespace Simulacra.Utils
         {
             j++;
 
-            // Check indexes of previous dimension are in bounds.
-            if (i >= array.GetOutOfBound(0))
-                return false;
-            
             if (j < array.GetOutOfBound(1))
                 return true;
             j = array.GetLowerBound(1);
@@ -253,10 +315,6 @@ namespace Simulacra.Utils
         static public bool MoveIndex(this IArrayDefinition array, ref int i, ref int j)
         {
             j++;
-
-            // Check indexes of previous dimension are in bounds.
-            if (i >= array.GetOutOfBound(0))
-                return false;
 
             if (j < array.GetOutOfBound(1))
                 return true;
