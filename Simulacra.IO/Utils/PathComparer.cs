@@ -5,7 +5,7 @@ namespace Simulacra.IO.Utils
 {
     public enum PathCaseComparison
     {
-        EnvironmentDefault,
+        SystemDefault,
         RespectCase,
         IgnoreCase
     }
@@ -18,35 +18,47 @@ namespace Simulacra.IO.Utils
 
     public class PathComparer : IEqualityComparer<string>, IComparer<string>
     {
+        public IPathSystem PathSystem { get; }
         public PathCaseComparison CaseComparison { get; }
         public FolderPathEquality FolderEquality { get; }
-
+        
         public PathComparer()
-            : this(PathCaseComparison.EnvironmentDefault, FolderPathEquality.RespectAmbiguity)
+            : this(IO.PathSystem.Instance)
         {
         }
 
-        public PathComparer(PathCaseComparison caseComparison, FolderPathEquality folderEquality)
+        public PathComparer(IPathSystem pathSystem)
+            : this(pathSystem, PathCaseComparison.SystemDefault, FolderPathEquality.RespectAmbiguity)
         {
+        }
+
+        public PathComparer(IPathSystem pathSystem,
+            PathCaseComparison caseComparison,
+            FolderPathEquality folderEquality)
+        {
+            PathSystem = pathSystem;
             CaseComparison = caseComparison;
             FolderEquality = folderEquality;
         }
 
-        public bool Equals(string x, string y) => Equals(x, y, CaseComparison, FolderEquality);
-        public int Compare(string x, string y) => Compare(x, y, CaseComparison, FolderEquality);
-        public int GetHashCode(string obj) => ApplyCaseComparison(ApplyFolderEquality(PathUtils.Normalize(obj), FolderEquality), CaseComparison).GetHashCode();
+        public bool Equals(string x, string y) => Equals(x, y, PathSystem, CaseComparison, FolderEquality);
+        public int Compare(string x, string y) => Compare(x, y, PathSystem, CaseComparison, FolderEquality);
+        public int GetHashCode(string obj) => ApplyCaseComparison(ApplyFolderEquality(PathSystem.Normalize(obj), PathSystem, FolderEquality), PathSystem, CaseComparison).GetHashCode();
 
-        static public bool Equals(string first, string second, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
+        static public bool Equals(string first, string second, IPathSystem pathSystem, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
         {
             if (first == null && second == null)
                 return true;
             if (first == null ^ second == null)
                 return false;
 
-            return string.Equals(ApplyFolderEquality(PathUtils.Normalize(first), folderEquality), ApplyFolderEquality(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
+            return string.Equals(
+                ApplyFolderEquality(pathSystem.Normalize(first), pathSystem, folderEquality),
+                ApplyFolderEquality(pathSystem.Normalize(second), pathSystem, folderEquality),
+                GetStringComparison(pathSystem, caseComparison));
         }
 
-        static public int Compare(string first, string second, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
+        static public int Compare(string first, string second, IPathSystem pathSystem, PathCaseComparison caseComparison, FolderPathEquality folderEquality)
         {
             if (first == null && second == null)
                 return 0;
@@ -55,31 +67,34 @@ namespace Simulacra.IO.Utils
             if (second == null)
                 return 1;
 
-            return string.Compare(ApplyFolderEquality(PathUtils.Normalize(first), folderEquality), ApplyFolderEquality(PathUtils.Normalize(second), folderEquality), GetStringComparison(caseComparison));
+            return string.Compare(
+                ApplyFolderEquality(pathSystem.Normalize(first), pathSystem, folderEquality),
+                ApplyFolderEquality(pathSystem.Normalize(second), pathSystem, folderEquality),
+                GetStringComparison(pathSystem, caseComparison));
         }
 
-        static public string ApplyFolderEquality(string path, FolderPathEquality folderEquality)
+        static public string ApplyFolderEquality(string path, IPathSystem pathSystem, FolderPathEquality folderEquality)
         {
             if (path == null)
                 throw new ArgumentNullException();
 
             if (folderEquality == FolderPathEquality.RespectAmbiguity)
-                path = PathUtils.TrimEndSeparator(path);
+                path = pathSystem.TrimEndSeparator(path);
 
             return path;
         }
 
-        static public string ApplyCaseComparison(string path, PathCaseComparison caseComparison)
+        static public string ApplyCaseComparison(string path, IPathSystem pathSystem, PathCaseComparison caseComparison)
         {
             if (path == null)
                 throw new ArgumentNullException();
 
             switch (caseComparison)
             {
-                case PathCaseComparison.EnvironmentDefault:
-                    if (IsEnvironmentCaseSensitive())
+                case PathCaseComparison.SystemDefault:
+                    if (pathSystem.PathsCaseSensitive)
                         goto default;
-                    else goto case PathCaseComparison.IgnoreCase;
+                    goto case PathCaseComparison.IgnoreCase;
                 case PathCaseComparison.IgnoreCase:
                     return path.ToLowerInvariant();
                 default:
@@ -87,27 +102,18 @@ namespace Simulacra.IO.Utils
             }
         }
 
-        static public StringComparison GetStringComparison(PathCaseComparison caseComparison)
+        static public StringComparison GetStringComparison(IPathSystem pathSystem, PathCaseComparison caseComparison)
         {
             switch (caseComparison)
             {
-                case PathCaseComparison.EnvironmentDefault:
-                    return IsEnvironmentCaseSensitive() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                case PathCaseComparison.SystemDefault:
+                    return pathSystem.PathsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
                 case PathCaseComparison.RespectCase:
                     return StringComparison.Ordinal;
                 case PathCaseComparison.IgnoreCase:
                     return StringComparison.OrdinalIgnoreCase;
                 default:
                     throw new NotSupportedException();
-            }
-        }
-
-        static public bool IsEnvironmentCaseSensitive()
-        {
-            switch (Environment.OSVersion.Platform)
-            {
-                case PlatformID.Unix: return true;
-                default: return false;
             }
         }
     }

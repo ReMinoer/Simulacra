@@ -58,13 +58,13 @@ namespace Simulacra.IO.Binding
 
         protected override void Subscribe(string path, FileChangedEventHandler handler)
         {
-            if (PathUtils.IsValidAbsolutePath(path))
+            if (PathBindingModule.Watcher.FileSystem.IsValidAbsolutePath(path))
                 PathBindingModule.Watcher.WatchFile(path, handler);
         }
 
         protected override void Unsubscribe(string path, FileChangedEventHandler handler)
         {
-            if (PathUtils.IsValidAbsolutePath(path))
+            if (PathBindingModule.Watcher.FileSystem.IsValidAbsolutePath(path))
                 PathBindingModule.Watcher.Unwatch(path, handler);
         }
 

@@ -364,11 +364,11 @@ namespace Simulacra.IO.Test
                 exceptedChange.NoChange.Should().BeFalse();
 
                 sender.Should().Be(watcher);
-                args.WatchedPathPattern.Pattern.Should().Match(x => PathEquals(x, exceptedChange.WatchedPath));
-                args.Path.Should().Match(x => PathEquals(x, exceptedChange.Path));
+                args.WatchedPathPattern.Pattern.Should().Match(x => PathEquals(x, exceptedChange.WatchedPath, watcher.FileSystem));
+                args.Path.Should().Match(x => PathEquals(x, exceptedChange.Path, watcher.FileSystem));
                 args.ChangeType.Should().Be(exceptedChange.ChangeTypes[i]);
-                args.NewPath.Should().Match(x => PathEquals(x, exceptedChange.NewPath));
-                args.OldPath.Should().Match(x => PathEquals(x, exceptedChange.OldPath));
+                args.NewPath.Should().Match(x => PathEquals(x, exceptedChange.NewPath, watcher.FileSystem));
+                args.OldPath.Should().Match(x => PathEquals(x, exceptedChange.OldPath, watcher.FileSystem));
                 action();
                 i++;
             };
@@ -382,17 +382,17 @@ namespace Simulacra.IO.Test
                 exceptedChange.NoChange.Should().BeFalse();
                 
                 sender.Should().Be(watcher);
-                args.WatchedPathPattern.Pattern.Should().Match(x => PathEquals(x, exceptedChange.WatchedPath));
-                args.Path.Should().Match(x => PathEquals(x, exceptedChange.Path));
+                args.WatchedPathPattern.Pattern.Should().Match(x => PathEquals(x, exceptedChange.WatchedPath, watcher.FileSystem));
+                args.Path.Should().Match(x => PathEquals(x, exceptedChange.Path, watcher.FileSystem));
                 args.ChangeType.Should().Be(exceptedChange.ChangeTypes[i]);
-                args.NewPath.Should().Match(x => PathEquals(x, exceptedChange.NewPath));
-                args.OldPath.Should().Match(x => PathEquals(x, exceptedChange.OldPath));
+                args.NewPath.Should().Match(x => PathEquals(x, exceptedChange.NewPath, watcher.FileSystem));
+                args.OldPath.Should().Match(x => PathEquals(x, exceptedChange.OldPath, watcher.FileSystem));
                 action();
                 i++;
             };
         }
 
-        private bool PathEquals(string path, string other) => PathComparer.Equals(path, other, PathCaseComparison.IgnoreCase, FolderPathEquality.RespectAmbiguity);
+        private bool PathEquals(string path, string other, IPathSystem pathSystem) => PathComparer.Equals(path, other, pathSystem, PathCaseComparison.IgnoreCase, FolderPathEquality.RespectAmbiguity);
 
         private ExceptedChange<TChangeType> Expect<TChangeType>(string watchedPath, string path, string newPath = null, string oldPath = null, params TChangeType[] changeTypes)
         {

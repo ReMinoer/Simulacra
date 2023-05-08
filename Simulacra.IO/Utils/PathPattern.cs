@@ -5,6 +5,8 @@ namespace Simulacra.IO.Utils
 {
     public class PathPattern
     {
+        public IPathSystem PathSystem { get; }
+
         public string Pattern { get; }
         public bool CaseSensitive { get; }
 
@@ -13,16 +15,18 @@ namespace Simulacra.IO.Utils
 
         private readonly Regex _regex;
 
-        public PathPattern(string pattern, bool caseSensitive = true)
+        public PathPattern(string pattern, IPathSystem pathSystem, bool caseSensitive = true)
         {
-            if (!IsValid(pattern))
+            if (!IsValid(pattern, pathSystem))
                 throw new ArgumentException();
+            
+            PathSystem = pathSystem;
 
             Pattern = pattern;
             CaseSensitive = caseSensitive;
 
-            FolderPath = PathUtils.GetFolderPath(pattern);
-            NamePattern = PathUtils.GetName(pattern);
+            FolderPath = PathSystem.GetFolderPath(pattern);
+            NamePattern = PathSystem.GetName(pattern);
 
             if (IsSimplePath(NamePattern))
                 return;
@@ -31,34 +35,34 @@ namespace Simulacra.IO.Utils
             if (!caseSensitive)
                 regexOptions |= RegexOptions.IgnoreCase;
 
-            _regex = new Regex(ConvertPatternToRegex(Pattern), regexOptions);
+            _regex = new Regex(ConvertPatternToRegex(Pattern, PathSystem), regexOptions);
         }
 
         static private readonly Regex ValidPatternRegex = new Regex(@"^[\/\\]*(?:[^*?\/\\]*[\/\\])*[^\/\\]+[\/\\]?$", RegexOptions.Compiled);
 
-        static public bool IsValid(string pattern)
+        static public bool IsValid(string pattern, IPathSystem pathSystem)
         {
-            return PathUtils.IsValidPath(pattern) && ValidPatternRegex.IsMatch(pattern);
+            return pathSystem.IsValidPath(pattern) && ValidPatternRegex.IsMatch(pattern);
         }
 
         public bool Match(string path)
         {
-            return _regex?.IsMatch(PathUtils.TrimEndSeparator(path)) ?? MatchSimplePath(path, Pattern, CaseSensitive);
+            return _regex?.IsMatch(PathSystem.TrimEndSeparator(path)) ?? MatchSimplePath(path, Pattern, PathSystem, CaseSensitive);
         }
 
-        static public bool Match(string path, string pattern, bool caseSensitive = true)
+        static public bool Match(string path, string pattern, IPathSystem pathSystem, bool caseSensitive = true)
         {
-            if (!IsValid(pattern))
+            if (!IsValid(pattern, pathSystem))
                 throw new ArgumentException();
 
             if (IsSimplePath(pattern))
-                return MatchSimplePath(path, pattern, caseSensitive);
+                return MatchSimplePath(path, pattern, pathSystem, caseSensitive);
 
             var regexOptions = RegexOptions.None;
             if (!caseSensitive)
                 regexOptions |= RegexOptions.IgnoreCase;
 
-            return Regex.IsMatch(PathUtils.TrimEndSeparator(path), ConvertPatternToRegex(pattern), regexOptions);
+            return Regex.IsMatch(pathSystem.TrimEndSeparator(path), ConvertPatternToRegex(pattern, pathSystem), regexOptions);
         }
 
         static private bool IsSimplePath(string namePattern)
@@ -66,16 +70,16 @@ namespace Simulacra.IO.Utils
             return !namePattern.Contains("*") && !namePattern.Contains("?");
         }
 
-        static private bool MatchSimplePath(string path, string pattern, bool caseSensitive = true)
+        static private bool MatchSimplePath(string path, string pattern, IPathSystem pathSystem, bool caseSensitive = true)
         {
             PathCaseComparison pathCaseComparison = caseSensitive ? PathCaseComparison.RespectCase : PathCaseComparison.IgnoreCase;
-            return PathComparer.Equals(path, pattern, pathCaseComparison, FolderPathEquality.RespectAmbiguity);
+            return PathComparer.Equals(path, pattern, pathSystem, pathCaseComparison, FolderPathEquality.RespectAmbiguity);
         }
 
-        static private string ConvertPatternToRegex(string pattern)
+        static private string ConvertPatternToRegex(string pattern, IPathSystem pathSystem)
         {
             return "^"
-                + PathUtils.TrimEndSeparator(pattern)
+                + pathSystem.TrimEndSeparator(pattern)
                     .Replace(@"/", @"\/")
                     .Replace(@"\", @"\\")
                     .Replace(@".", @"\.")

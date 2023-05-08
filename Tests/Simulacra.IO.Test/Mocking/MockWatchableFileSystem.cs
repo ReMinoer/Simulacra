@@ -8,14 +8,15 @@ namespace Simulacra.IO.Test.Mocking
 {
     public class MockWatchableFileSystem : IWatchableFileSystem
     {
-        private const char AbsoluteSeparator = '\\';
-
         private List<Action> _batch;
         private readonly HashSet<string> _existingPaths = new HashSet<string>();
 
         public bool PathsCaseSensitive => false;
+        public char[] Separators { get; } = { '\\', '/' };
+        public char AbsoluteSeparator => '\\';
+        public char RelativeSeparator => '/';
+        public char[] InvalidPathChars { get; } = Array.Empty<char>();
         public bool IsPathRooted(string path) => path.Length >= 2 && char.IsLetter(path[0]) && path[1] == ':';
-        public bool IsExplicitFolderPath(string path) => path.EndsWith(AbsoluteSeparator);
 
         public MockFileSystemWatcherProvider WatcherProvider { get; }
 
@@ -24,62 +25,22 @@ namespace Simulacra.IO.Test.Mocking
             WatcherProvider = new MockFileSystemWatcherProvider(this);
         }
 
-        static private string Combine(string left, string right)
+        private string Combine(string left, string right)
         {
             if (!left.EndsWith(AbsoluteSeparator))
                 left += AbsoluteSeparator;
             return left + right;
         }
 
-        public string GetFolderPath(string path)
-        {
-            path = path.TrimEnd(AbsoluteSeparator);
-
-            int lastSeparator = path.LastIndexOf(AbsoluteSeparator);
-            if (lastSeparator == -1)
-                return null;
-
-            return path.Substring(0, lastSeparator);
-        }
-
-        static public string GetName(string path)
-        {
-            path = path.TrimEnd(AbsoluteSeparator);
-
-            int lastSeparator = path.LastIndexOf(AbsoluteSeparator);
-            if (lastSeparator == -1 || lastSeparator > path.Length - 1)
-                return null;
-
-            return path.Substring(lastSeparator + 1, path.Length - lastSeparator - 1);
-        }
-
-        public string UniqueFile(string path)
-        {
-            if (IsExplicitFolderPath(path))
-                throw new ArgumentException();
-
-            return path.ToLowerInvariant();
-        }
-
-        public string UniqueFolder(string path)
-        {
-            path = path.ToLowerInvariant();
-
-            if (!IsExplicitFolderPath(path))
-                path += AbsoluteSeparator;
-
-            return path;
-        }
-
-        public bool FileExists(string filePath) => _existingPaths.Contains(UniqueFile(filePath));
+        public bool FileExists(string filePath) => _existingPaths.Contains(this.UniqueFile(filePath));
         public bool FolderExists(string folderPath)
         {
-            folderPath = UniqueFolder(folderPath);
+            folderPath = this.UniqueFolder(folderPath);
             return _existingPaths.Any(x => x.StartsWith(folderPath));
         }
 
-        public IEnumerable<string> GetFiles(PathPattern pathPattern) => _existingPaths.Where(x => !PathUtils.IsExplicitFolderPath(x)).Where(pathPattern.Match);
-        public IEnumerable<string> GetFolders(PathPattern pathPattern) => _existingPaths.Where(PathUtils.IsExplicitFolderPath).Where(pathPattern.Match);
+        public IEnumerable<string> GetFiles(PathPattern pathPattern) => _existingPaths.Where(x => !this.IsExplicitFolderPath(x)).Where(pathPattern.Match);
+        public IEnumerable<string> GetFolders(PathPattern pathPattern) => _existingPaths.Where(this.IsExplicitFolderPath).Where(pathPattern.Match);
 
         private void AddPath(string path)
         {
@@ -87,11 +48,11 @@ namespace Simulacra.IO.Test.Mocking
 
             while (true)
             {
-                string folderPath = GetFolderPath(path);
+                string folderPath = this.GetFolderPath(path);
                 if (folderPath == null)
                     return;
 
-                string uniquePath = UniqueFolder(folderPath);
+                string uniquePath = this.UniqueFolder(folderPath);
                 if (_existingPaths.Add(uniquePath))
                 {
                     foreach (MockFileSystemWatcher watcher in WatcherProvider.GetAllMatchingWatchers(uniquePath))
@@ -145,10 +106,10 @@ namespace Simulacra.IO.Test.Mocking
         {
             AddPath(uniquePath);
 
-            if (!IsExplicitFolderPath(uniquePath))
+            if (!this.IsExplicitFolderPath(uniquePath))
             {
-                string folderPath = GetFolderPath(uniquePath);
-                if (folderPath == null || !FolderExists(UniqueFolder(folderPath)))
+                string folderPath = this.GetFolderPath(uniquePath);
+                if (folderPath == null || !FolderExists(this.UniqueFolder(folderPath)))
                     throw new InvalidOperationException();
             }
 
@@ -186,7 +147,7 @@ namespace Simulacra.IO.Test.Mocking
 
         public void Rename(string uniqueOldPath, string uniqueNewName)
         {
-            string folderPath = GetFolderPath(uniqueOldPath);
+            string folderPath = this.GetFolderPath(uniqueOldPath);
             if (folderPath == null)
                 return;
 
@@ -230,7 +191,7 @@ namespace Simulacra.IO.Test.Mocking
             public IEnumerable<MockFileSystemWatcher> GetAllMatchingWatchers(string uniquePath)
             {
                 GetWatcher(uniquePath);
-                return _watchers.Where(x => PathPattern.Match(uniquePath, x.Key, caseSensitive: true)).Select(x => x.Value).ToArray();
+                return _watchers.Where(x => PathPattern.Match(uniquePath, x.Key, _fileSystem, caseSensitive: true)).Select(x => x.Value).ToArray();
             }
 
             IFileSystemWatcher IFileSystemWatcherProvider.GetWatcher(string folderPath) => GetWatcher(folderPath);
@@ -243,8 +204,8 @@ namespace Simulacra.IO.Test.Mocking
                 if (folderPath == null)
                     return null;
 
-                string name = GetName(uniquePath);
-                _watchers[uniquePath] = watcher = new MockFileSystemWatcher(folderPath, name);
+                string name = _fileSystem.GetName(uniquePath);
+                _watchers[uniquePath] = watcher = new MockFileSystemWatcher(folderPath, name, _fileSystem);
                 watcher.FullyReleased += OnWatcherFullyReleased;
 
                 return watcher;

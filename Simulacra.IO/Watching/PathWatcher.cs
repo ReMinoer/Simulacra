@@ -9,13 +9,13 @@ namespace Simulacra.IO.Watching
 {
     public class PathWatcher
     {
-        private readonly IWatchableFileSystem _fileSystem;
         private readonly IFileSystemWatcherProvider _watcherProvider;
         private readonly object _lock = new object();
 
         private readonly Dictionary<(string, Delegate), PathHandlersBase> _handlers = new Dictionary<(string, Delegate), PathHandlersBase>();
         private readonly Dictionary<string, SharedWatcher> _sharedWatchers = new Dictionary<string, SharedWatcher>();
-
+        
+        public IWatchableFileSystem FileSystem { get; }
         public ILogger Logger { get; set; }
 
         public PathWatcher()
@@ -25,16 +25,16 @@ namespace Simulacra.IO.Watching
 
         public PathWatcher(IWatchableFileSystem fileSystem, IFileSystemWatcherProvider watcherProvider)
         {
-            _fileSystem = fileSystem;
+            FileSystem = fileSystem;
             _watcherProvider = watcherProvider;
         }
 
         public void WatchFile(string path, FileChangedEventHandler handler)
         {
-            if (!_fileSystem.IsPathRooted(path) || _fileSystem.IsExplicitFolderPath(path) || !PathPattern.IsValid(path))
+            if (!FileSystem.IsPathRooted(path) || FileSystem.IsExplicitFolderPath(path) || !PathPattern.IsValid(path, FileSystem))
                 throw new ArgumentException();
 
-            string uniquePath = _fileSystem.UniqueFile(path);
+            string uniquePath = FileSystem.UniqueFile(path);
             SharedWatcher sharedWatcher = GetSharedWatcher(uniquePath);
             if (sharedWatcher == null)
                 throw new ArgumentException();
@@ -47,10 +47,10 @@ namespace Simulacra.IO.Watching
 
         public void WatchFolder(string path, FolderChangedEventHandler handler)
         {
-            if (!_fileSystem.IsPathRooted(path) || !PathPattern.IsValid(path))
+            if (!FileSystem.IsPathRooted(path) || !PathPattern.IsValid(path, FileSystem))
                 throw new ArgumentException();
 
-            string uniquePath = _fileSystem.UniqueFolder(path);
+            string uniquePath = FileSystem.UniqueFolder(path);
             SharedWatcher sharedWatcher = GetSharedWatcher(uniquePath);
             if (sharedWatcher == null)
                 throw new ArgumentException();
@@ -63,7 +63,7 @@ namespace Simulacra.IO.Watching
 
         public void Unwatch(string path, FileChangedEventHandler fileHandler)
         {
-            string uniquePath = _fileSystem.UniqueFile(path);
+            string uniquePath = FileSystem.UniqueFile(path);
             Logger?.LogInformation($"Stop watching file: {uniquePath}");
 
             Unwatch(uniquePath, handler: fileHandler);
@@ -71,7 +71,7 @@ namespace Simulacra.IO.Watching
 
         public void Unwatch(string path, FolderChangedEventHandler folderHandler)
         {
-            string uniquePath = _fileSystem.UniqueFolder(path);
+            string uniquePath = FileSystem.UniqueFolder(path);
             Logger?.LogInformation($"Stop watching folder: {uniquePath}");
 
             Unwatch(uniquePath, handler: folderHandler);
@@ -89,8 +89,8 @@ namespace Simulacra.IO.Watching
             }
         }
 
-        public IDisposable SuspendWatching(string path, FileChangedEventHandler fileHandler) => SuspendWatching(_fileSystem.UniqueFile(path), handler: fileHandler);
-        public IDisposable SuspendWatching(string path, FolderChangedEventHandler folderHandler) => SuspendWatching(_fileSystem.UniqueFolder(path), handler: folderHandler);
+        public IDisposable SuspendWatching(string path, FileChangedEventHandler fileHandler) => SuspendWatching(FileSystem.UniqueFile(path), handler: fileHandler);
+        public IDisposable SuspendWatching(string path, FolderChangedEventHandler folderHandler) => SuspendWatching(FileSystem.UniqueFolder(path), handler: folderHandler);
         private IDisposable SuspendWatching(string uniquePath, Delegate handler)
         {
             lock (_lock)
@@ -120,7 +120,7 @@ namespace Simulacra.IO.Watching
 
         private SharedWatcher GetSharedWatcher(string uniquePath)
         {
-            string folderPath = _fileSystem.GetFolderPath(uniquePath);
+            string folderPath = FileSystem.GetFolderPath(uniquePath);
             if (folderPath == null)
                 return null;
 
@@ -160,7 +160,7 @@ namespace Simulacra.IO.Watching
             public PathWatcher PathWatcher { get; }
 
             public IFileSystemWatcher FileSystemWatcher { get; private set; }
-            public IWatchableFileSystem FileSystem => PathWatcher._fileSystem;
+            public IWatchableFileSystem FileSystem => PathWatcher.FileSystem;
             public IFileSystemWatcherProvider WatcherProvider => PathWatcher._watcherProvider;
 
             public event Action FolderCreated;
@@ -313,7 +313,7 @@ namespace Simulacra.IO.Watching
             public PathHandlersBase(string uniquePath, SharedWatcher sharedWatcher, bool subscribeToChanged)
             {
                 UniquePath = uniquePath;
-                PathPattern = new PathPattern(uniquePath, sharedWatcher.FileSystem.PathsCaseSensitive);
+                PathPattern = new PathPattern(uniquePath, sharedWatcher.FileSystem, sharedWatcher.FileSystem.PathsCaseSensitive);
 
                 SharedWatcher = sharedWatcher;
                 _subscribeToChanged = subscribeToChanged;
@@ -326,7 +326,7 @@ namespace Simulacra.IO.Watching
                     ? PathCaseComparison.RespectCase
                     : PathCaseComparison.IgnoreCase;
 
-                var existingPathComparer = new PathComparer(caseComparison, FolderPathEquality.RespectAmbiguity);
+                var existingPathComparer = new PathComparer(sharedWatcher.FileSystem, caseComparison, FolderPathEquality.RespectAmbiguity);
                 _matchingPaths = new ConcurrentDictionary<string, bool>(existingPathComparer);
 
                 RefreshExistingMatchingPaths();
