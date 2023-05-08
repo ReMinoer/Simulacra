@@ -93,6 +93,20 @@ namespace Simulacra.IO
             return trimmedPath.Substring(lastSeparatorIndex + 1);
         }
 
+        static public string Combine(this IPathSystem pathSystem, string left, string right)
+        {
+            if (!IsValidPath(pathSystem, left))
+                throw new ArgumentException();
+            if (!IsValidRelativePath(pathSystem, right))
+                throw new ArgumentException();
+
+            string normalizedLeft = Normalize(pathSystem, left, out char separator);
+            if (!normalizedLeft.EndsWith(separator.ToString()))
+                normalizedLeft += separator;
+
+            return Normalize(pathSystem, normalizedLeft + right);
+        }
+
         static public bool IsExplicitFolderPath(this IPathSystem pathSystem, string path) => IsExplicitAbsoluteFolderPath(pathSystem, path) || IsExplicitRelativeFolderPath(pathSystem, path);
         static public bool IsExplicitAbsoluteFolderPath(this IPathSystem pathSystem, string path) => IsExplicitFolderPath(path, pathSystem.AbsoluteSeparator);
         static public bool IsExplicitRelativeFolderPath(this IPathSystem pathSystem, string path) => IsExplicitFolderPath(path, pathSystem.RelativeSeparator);

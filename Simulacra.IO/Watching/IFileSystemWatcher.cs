@@ -1,14 +1,13 @@
 ﻿using System;
-using System.IO;
 
 namespace Simulacra.IO.Watching
 {
     public interface IFileSystemWatcher : IShared, IDisposable
     {
-        event FileSystemEventHandler Changed;
-        event FileSystemEventHandler Created;
-        event FileSystemEventHandler Deleted;
-        event RenamedEventHandler Renamed;
+        event FileSystemChangedEventHandler Changed;
+        event FileSystemChangedEventHandler Created;
+        event FileSystemChangedEventHandler Deleted;
+        event FileSystemRenamedEventHandler Renamed;
         void Enable();
     }
 }

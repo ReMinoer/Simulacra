@@ -425,7 +425,7 @@ namespace Simulacra.IO.Watching
                 }
             }
 
-            private void OnChanged(object sender, System.IO.FileSystemEventArgs e)
+            private void OnChanged(object sender, FileSystemChangedEventArgs e)
             {
                 lock (_lock)
                 {
@@ -437,7 +437,7 @@ namespace Simulacra.IO.Watching
                 }
             }
 
-            private void OnCreated(object sender, System.IO.FileSystemEventArgs e)
+            private void OnCreated(object sender, FileSystemChangedEventArgs e)
             {
                 lock (_lock)
                 {
@@ -449,7 +449,7 @@ namespace Simulacra.IO.Watching
                 }
             }
 
-            private void OnDeleted(object sender, System.IO.FileSystemEventArgs e)
+            private void OnDeleted(object sender, FileSystemChangedEventArgs e)
             {
                 lock (_lock)
                 {
@@ -461,7 +461,7 @@ namespace Simulacra.IO.Watching
                 }
             }
 
-            private void OnRenamed(object sender, System.IO.RenamedEventArgs e)
+            private void OnRenamed(object sender, FileSystemRenamedEventArgs e)
             {
                 lock (_lock)
                 {

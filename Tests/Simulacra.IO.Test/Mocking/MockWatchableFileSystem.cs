@@ -25,13 +25,6 @@ namespace Simulacra.IO.Test.Mocking
             WatcherProvider = new MockFileSystemWatcherProvider(this);
         }
 
-        private string Combine(string left, string right)
-        {
-            if (!left.EndsWith(AbsoluteSeparator))
-                left += AbsoluteSeparator;
-            return left + right;
-        }
-
         public bool FileExists(string filePath) => _existingPaths.Contains(this.UniqueFile(filePath));
         public bool FolderExists(string folderPath)
         {
@@ -151,7 +144,7 @@ namespace Simulacra.IO.Test.Mocking
             if (folderPath == null)
                 return;
 
-            string uniqueNewPath = Combine(folderPath, uniqueNewName);
+            string uniqueNewPath = this.Combine(folderPath, uniqueNewName);
 
             RemovePath(uniqueOldPath);
             AddPath(uniqueNewPath);

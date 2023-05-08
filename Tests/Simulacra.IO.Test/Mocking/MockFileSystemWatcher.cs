@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Simulacra.IO.Watching;
 
 namespace Simulacra.IO.Test.Mocking
@@ -11,10 +10,10 @@ namespace Simulacra.IO.Test.Mocking
         private readonly IPathSystem _pathSystem;
         private int _counter;
 
-        public event FileSystemEventHandler Changed;
-        public event FileSystemEventHandler Created;
-        public event FileSystemEventHandler Deleted;
-        public event RenamedEventHandler Renamed;
+        public event FileSystemChangedEventHandler Changed;
+        public event FileSystemChangedEventHandler Created;
+        public event FileSystemChangedEventHandler Deleted;
+        public event FileSystemRenamedEventHandler Renamed;
         public event EventHandler FullyReleased;
 
         public MockFileSystemWatcher(string folderPath, string name, IPathSystem pathSystem)
@@ -24,14 +23,13 @@ namespace Simulacra.IO.Test.Mocking
             _pathSystem = pathSystem;
         }
 
-        public void Change(string path) => Changed?.Invoke(this, GetEventArgs(WatcherChangeTypes.Changed, path));
-        public void Create(string path) => Created?.Invoke(this, GetEventArgs(WatcherChangeTypes.Created, path));
-        public void Delete(string path) => Deleted?.Invoke(this, GetEventArgs(WatcherChangeTypes.Deleted, path));
-        public void Rename(string path, string newName) => Renamed?.Invoke(this, new RenamedEventArgs(WatcherChangeTypes.Renamed, _pathSystem.GetFolderPath(path), newName, _pathSystem.GetName(path)));
-
-        private FileSystemEventArgs GetEventArgs(WatcherChangeTypes changeType, string path)
+        public void Change(string path) => Changed?.Invoke(this, new FileSystemChangedEventArgs(FileSystemChangeType.Changed, path));
+        public void Create(string path) => Created?.Invoke(this, new FileSystemChangedEventArgs(FileSystemChangeType.Created, path));
+        public void Delete(string path) => Deleted?.Invoke(this, new FileSystemChangedEventArgs(FileSystemChangeType.Deleted, path));
+        public void Rename(string path, string newName)
         {
-            return new FileSystemEventArgs(changeType, _pathSystem.GetFolderPath(path), _pathSystem.GetName(path));
+            string newPath = _pathSystem.Combine(_pathSystem.GetFolderPath(path), newName);
+            Renamed?.Invoke(this, new FileSystemRenamedEventArgs(path, newPath));
         }
 
         public void Increment() => _counter++;
