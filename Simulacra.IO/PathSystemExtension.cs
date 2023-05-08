@@ -76,6 +76,9 @@ namespace Simulacra.IO
                 return null;
 
             string folderPath = trimmedPath.Substring(0, lastSeparatorIndex);
+            if (folderPath.Length == 0)
+                return null;
+
             return UniqueFolder(pathSystem, folderPath, PathCaseComparison.IgnoreCase);
         }
 
